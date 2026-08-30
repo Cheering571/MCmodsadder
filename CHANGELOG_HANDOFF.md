@@ -377,4 +377,13 @@ McModsAdder 已从项目骨架发展为具备核心可用流程的 .NET 8 WPF �
 - **修改文件**：`McModsAdder.iss`；生成发布目录 `publish/win-x64/` 和安装包目录 `installer/`。
 - **核心实现方式**：复核现有 Inno Setup 脚本，关闭可能运行的旧版程序后重新执行 .NET 8 `Release`、`win-x64`、自包含、单文件发布；使用 Inno Setup 6.7.3 编译脚本，将发布文件打包为 Windows x64 安装程序。安装脚本支持选择安装目录、开始菜单快捷方式、可选桌面快捷方式、卸载和安装完成后启动。
 - **验证结果**：项目 Release 构建成功，0 个警告、0 个错误；自包含发布成功；Inno Setup 编译成功，生成 `installer/McModsAdder-Setup-1.0.0-win-x64.exe`。安装包大小为 51,570,217 字节，SHA-256 为 `1396C1416E8C97C843037AC2CDAABB179E24527955885AFB060A6CB31FB2D553`；安装脚本检查无诊断信息。
-- **已知限制和后续事项**：当前安装包面向 Windows x64；安装向导使用 Inno Setup 默认图标，因为项目 PNG 图标不是 Inno Setup 可直接接受的 ICO 格式。后续如需自定义安装包图标，应提供标准多尺寸 ICO 文件并在脚本中配置 `SetupIconFile`。
+
+
+## 12. 2026-08-30 GitHub Release 中文描述乱码修复
+
+- **大致时间**：2026-08-30，会话期间。
+- **用户问题或目标**：发现 GitHub `v1.0.0` Releases 页面中的中文描述出现乱码，要求检查并修复。
+- **修改文件**：GitHub Release `v1.0.0` 的发布说明；本地使用临时文件 `release-notes-zh.md`，更新完成后已删除。
+- **核心实现方式**：重新生成 UTF-8 编码的 Markdown 发布说明，通过 GitHub CLI 的 `--notes-file` 更新 Release，避免 PowerShell 命令行直接传入中文时发生编码转换，并保留 Markdown 标题、列表和代码格式。
+- **验证结果**：Release API 返回的正文已为正常简体中文，临时说明文件已清理；安装包资产和原有 SHA-256 校验值未改变。
+- **已知限制和后续事项**：部分网页抓取工具可能仍按错误编码显示 GitHub 页面缓存内容；以 GitHub 页面实际刷新后的显示和 Release API 返回正文为准。
