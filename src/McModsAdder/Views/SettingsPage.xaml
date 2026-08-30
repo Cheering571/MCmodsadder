@@ -1,0 +1,69 @@
+<Page x:Class="McModsAdder.Views.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="设置">
+    <ScrollViewer Margin="32,24" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="640">
+            <TextBlock Text="设置" Style="{StaticResource PageTitle}" />
+            <TextBlock Text="所有设置自动保存" Style="{StaticResource PageSubtitle}" Margin="0,4,0,18" />
+
+            <!-- API 源 -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Modrinth API 源" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{StaticResource TextPrimary}" />
+                    <TextBlock Text="国内网络访问官方源不稳定时，切换到 MCIM 镜像"
+                               FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,10" />
+                    <ComboBox Width="280" HorizontalAlignment="Left"
+                              SelectedIndex="{Binding UseMirror, Converter={StaticResource BoolToIndex}}">
+                        <ComboBoxItem Content="Modrinth 官方（api.modrinth.com）" />
+                        <ComboBoxItem Content="MCIM 国内镜像（mod.mcimirror.top）" />
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+
+            <!-- 依赖 -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <ui:ToggleSwitch IsChecked="{Binding AutoInstallDependencies}">自动安装必需依赖</ui:ToggleSwitch>
+                    <TextBlock Text="补装 mod 时自动下载其必需的前置 mod（推荐开启）"
+                               FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- 并发 -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimary}">
+                        <Run Text="下载并发数：" /><Run Text="{Binding DownloadConcurrency, StringFormat='{}{0:0}', Mode=OneWay}" />
+                    </TextBlock>
+                    <Slider Minimum="1" Maximum="16" Value="{Binding DownloadConcurrency}"
+                            Margin="0,10,0,0" TickFrequency="1" IsSnapToTickEnabled="True" />
+                </StackPanel>
+            </Border>
+
+            <!-- 备份 -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <ui:ToggleSwitch IsChecked="{Binding BackupEnabled}">写入前备份旧文件</ui:ToggleSwitch>
+                    <TextBlock Text="被替换的旧 mod 文件会移入 mods/.mcmodsadder-backup/ 目录"
+                               FontSize="12" Foreground="{StaticResource TextTertiary}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- 关于 -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="关于" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{StaticResource TextPrimary}" />
+                    <TextBlock Text="{Binding VersionText}" FontSize="12" Margin="0,6,0,0"
+                               Foreground="{StaticResource TextSecondary}" />
+                    <TextBlock FontSize="11" Margin="0,4,0,0" Foreground="{StaticResource TextTertiary}">
+                        <Run Text="数据目录：" /><Run Text="{Binding DataDirText, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

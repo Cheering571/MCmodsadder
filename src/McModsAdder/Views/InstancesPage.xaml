@@ -1,0 +1,142 @@
+<Page x:Class="McModsAdder.Views.InstancesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="游戏实例"
+      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <Grid Margin="32,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="游戏实例" Style="{StaticResource PageTitle}" />
+            <TextBlock Text="自动识别 PCL / HMCL 版本隔离实例，也可手动选择整合包目录"
+                       Style="{StaticResource PageSubtitle}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,18,0,14">
+            <WrapPanel VerticalAlignment="Center">
+                <ui:Button Content="重新扫描" Command="{Binding RescanCommand}" Margin="0,0,10,8">
+                    <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></ui:Button.Icon>
+                </ui:Button>
+                <ui:Button Content="选择整合包目录" Command="{Binding BrowseCommand}" Style="{StaticResource GreenButton}" Margin="0,0,10,8">
+                    <ui:Button.Icon><ui:SymbolIcon Symbol="FolderOpen24" /></ui:Button.Icon>
+                </ui:Button>
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Margin="6,0,16,8"
+                           Foreground="{StaticResource TextTertiary}" FontSize="12" />
+            </WrapPanel>
+            <WrapPanel>
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                        BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,10,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="筛选" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"
+                                   FontWeight="SemiBold" Margin="0,0,10,0" />
+                        <ui:TextBox Width="190" Height="34" PlaceholderText="搜索实例名称或路径"
+                                    Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
+                        <ComboBox Width="120" Height="34" ItemsSource="{Binding LoaderOptions}"
+                                  SelectedItem="{Binding SelectedLoader}" Margin="0,0,8,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding}" /></DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ComboBox Width="130" Height="34" ItemsSource="{Binding GameVersionOptions}"
+                                  SelectedItem="{Binding SelectedGameVersion}" />
+                    </StackPanel>
+                </Border>
+                <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                        BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="排序" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"
+                                   FontWeight="SemiBold" Margin="0,0,10,0" />
+                        <ComboBox Width="150" Height="34" ItemsSource="{Binding SortModes}"
+                                  SelectedItem="{Binding SortMode}" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding InstancesView}">
+                    <ItemsControl.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                                            BorderThickness="0,0,0,1" Padding="4,12,4,8" Margin="0,0,16,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Background="{StaticResource AccentGreenDeep}" CornerRadius="5" Padding="8,3">
+                                                <TextBlock Text="{Binding Name, Converter={StaticResource GroupHeaderText}}" Foreground="White" FontWeight="SemiBold" />
+                                            </Border>
+                                            <TextBlock Text="  实例" Foreground="{StaticResource TextTertiary}"
+                                                       VerticalAlignment="Center" Margin="4,0,0,0" />
+                                            <TextBlock Text="  （" Foreground="{StaticResource TextTertiary}"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding ItemCount}" Foreground="{StaticResource TextSecondary}"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text=" 个）" Foreground="{StaticResource TextTertiary}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                            <GroupStyle.Panel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </GroupStyle.Panel>
+                        </GroupStyle>
+                    </ItemsControl.GroupStyle>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource CardButton}" Width="252" Height="136" Margin="0,0,16,16"
+                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Top"
+                                    Command="{Binding DataContext.OpenInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                    CommandParameter="{Binding}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimary}" TextWrapping="Wrap" LineHeight="20" Height="40" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                        <Border Style="{StaticResource Badge}">
+                                            <TextBlock Style="{StaticResource BadgeText}"
+                                                       Foreground="{StaticResource InfoBrush}"
+                                                       Text="{Binding GameVersion, FallbackValue='?', TargetNullValue='?'}" />
+                                        </Border>
+                                        <Border Style="{StaticResource Badge}" Margin="8,0,0,0">
+                                            <TextBlock Style="{StaticResource BadgeText}"
+                                                       Foreground="{Binding Loader, Converter={StaticResource LoaderToBrush}}"
+                                                       Text="{Binding Loader, Converter={StaticResource LoaderToText}}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding DirectoryPath}" FontSize="11" Margin="0,10,0,0"
+                                               Foreground="{StaticResource TextTertiary}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- 空态 -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Visibility="{Binding HasInstances, Converter={StaticResource InverseBoolToVisibility}}">
+                <ui:SymbolIcon Symbol="Cube24" FontSize="56" Foreground="{StaticResource TextTertiary}"
+                               HorizontalAlignment="Center" />
+                <TextBlock Text="尚未发现游戏实例" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextSecondary}" Margin="0,16,0,6" />
+                <TextBlock Text="点击上方「选择整合包目录」，选择 .minecraft、versions 或实例目录"
+                           FontSize="13" Foreground="{StaticResource TextTertiary}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Page>

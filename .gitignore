@@ -1,0 +1,21 @@
+# .NET build output
+**/bin/
+**/obj/
+publish/
+
+# Visual Studio / IDE
+.vs/
+*.user
+*.suo
+
+# Local application data and logs
+*.log
+crash.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

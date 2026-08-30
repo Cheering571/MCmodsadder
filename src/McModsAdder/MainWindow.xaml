@@ -1,0 +1,63 @@
+﻿<ui:FluentWindow x:Class="McModsAdder.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:views="clr-namespace:McModsAdder.Views"
+                 Title="McModsAdder · MC Mod 批量添加工具"
+                 Icon="/McModsAdder;component/Assets/AppIcon.png"
+                 Width="1120" Height="740"
+                 MinWidth="900" MinHeight="600"
+                 WindowStartupLocation="CenterScreen"
+                 WindowBackdropType="Mica"
+                 ExtendsContentIntoTitleBar="True"
+                 FontFamily="Microsoft YaHei UI">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="/McModsAdder;component/Assets/AppIcon.png" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+        <ui:NavigationView x:Name="NavView" Grid.Row="1"
+                           ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                           PaneDisplayMode="Left"
+                           OpenPaneLength="180"
+                           CompactPaneLength="48"
+                           IsBackButtonVisible="Collapsed"
+                           AlwaysShowHeader="False">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="游戏实例" Tag="instances"
+                                       TargetPageType="views:InstancesPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Games24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="配置表" Tag="profiles"
+                                       TargetPageType="views:ProfilesPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="DocumentTable24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="设置" Tag="settings"
+                                       TargetPageType="views:SettingsPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Settings24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
+        </ui:NavigationView>
+        <Popup x:Name="DetailPopup" Grid.RowSpan="2" PlacementTarget="{Binding RelativeSource={RelativeSource AncestorType=ui:FluentWindow}}"
+               Placement="Center" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+               Closed="DetailPopup_Closed">
+            <views:ModDetailWindow x:Name="ModDetailPanel"
+                                   MouseLeftButtonDown="ModDetailPanel_MouseLeftButtonDown"
+                                   MouseMove="ModDetailPanel_MouseMove" MouseLeftButtonUp="ModDetailPanel_MouseLeftButtonUp" />
+        </Popup>
+    </Grid>
+</ui:FluentWindow>

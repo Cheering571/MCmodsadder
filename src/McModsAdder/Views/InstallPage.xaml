@@ -1,0 +1,123 @@
+<Page x:Class="McModsAdder.Views.InstallPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="安装 mod">
+    <DockPanel Margin="32,24">
+
+        <!-- 底部操作（固定不滚动） -->
+        <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding ResultText}" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentGreen}" VerticalAlignment="Center" />
+                <TextBlock Margin="14,0,0,0" FontSize="11" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextTertiary}"
+                           Visibility="{Binding BackupDir, Converter={StaticResource StringToVisibility}}">
+                    <Run Text="旧文件已备份至：" /><Run Text="{Binding BackupDir, Mode=OneWay}" />
+                </TextBlock>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Content="开始安装" Style="{StaticResource GreenButton}" Padding="18,8"
+                           Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}"
+                           Visibility="{Binding IsFinished, Converter={StaticResource InverseBoolToVisibility}}">
+                    <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowDownload24" /></ui:Button.Icon>
+                </ui:Button>
+                <ui:Button Content="取消" Margin="10,0,0,0" Command="{Binding CancelCommand}"
+                           Visibility="{Binding IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ui:Button Content="返回实例详情" Margin="10,0,0,0" Command="{Binding BackToInstanceCommand}"
+                           Visibility="{Binding IsFinished, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ui:Button Content="返回实例列表" Margin="10,0,0,0" Command="{Binding BackToInstancesCommand}"
+                           Visibility="{Binding IsFinished, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 内容区：头部固定，仅列表滚动 -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel>
+                <TextBlock Text="补装 mod" Style="{StaticResource PageTitle}" />
+                <TextBlock Style="{StaticResource PageSubtitle}" Margin="0,4,0,0">
+                    <Run Text="目标实例：" /><Run Text="{Binding Instance.Name, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="（" /><Run Text="{Binding Instance.GameVersion, Mode=OneWay}" /><Run Text=" · " />
+                    <Run Text="{Binding Instance.Loader, Converter={StaticResource LoaderToText}, Mode=OneWay}" /><Run Text="）" />
+                </TextBlock>
+            </StackPanel>
+
+            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,16,0,12" Padding="18,12">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource TextSecondary}" />
+                    <ProgressBar Value="{Binding OverallProgress}" Maximum="100" Height="6" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- 待装清单（滚动区） -->
+            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="8,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="180" />
+                                        <ColumnDefinition Width="70" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimary}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource TextTertiary}"
+                                                   TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding VersionText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Item.Version.FileName, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource Badge}" HorizontalAlignment="Left">
+                                        <TextBlock Style="{StaticResource BadgeText}" Text="{Binding KindText}"
+                                                   Foreground="{StaticResource InfoBrush}" />
+                                    </Border>
+                                    <ProgressBar Grid.Column="2" Value="{Binding Progress}" Maximum="100"
+                                                 Height="5" VerticalAlignment="Center" Margin="8,0" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" FontSize="12"
+                                               FontWeight="SemiBold" HorizontalAlignment="Right"
+                                               Foreground="{Binding State, Converter={StaticResource InstallStateToBrush}}"
+                                               Text="{Binding StatusText}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 不可用清单（固定，内容过多时内部滚动） -->
+            <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="14,10"
+                    BorderBrush="{StaticResource DangerBrush}"
+                    Visibility="{Binding Unavailable.Count, Converter={StaticResource CountToVisibility}}">
+                <StackPanel>
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource DangerBrush}"
+                               Text="以下 mod 没有匹配此实例版本/加载器的文件，请手动处理：" />
+                    <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Unavailable}" Margin="0,6,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource BadgeBg}" CornerRadius="6" Padding="8,3" Margin="0,0,6,6">
+                                        <TextBlock Text="{Binding Name}" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Page>
