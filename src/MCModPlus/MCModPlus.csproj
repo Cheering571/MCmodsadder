@@ -11,12 +11,11 @@
     <Version>1.1.0</Version>
     <AssemblyVersion>1.1.0.0</AssemblyVersion>
     <FileVersion>1.1.0.0</FileVersion>
+    <ApplicationIcon>Assets\MCModPlus.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\*.png" />
-    <None Remove="Assets\*.gif" />
-    <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+    <Resource Include="Assets\MCModPlus.png" />
     <Content Include="Assets\*.gif" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

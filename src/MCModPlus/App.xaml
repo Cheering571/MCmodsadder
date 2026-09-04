@@ -113,6 +113,7 @@
             <converters:InstallStateToBrushConverter x:Key="InstallStateToBrush" />
             <converters:BoolToIndexConverter x:Key="BoolToIndex" />
             <converters:InverseBoolConverter x:Key="InverseBool" />
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
             <converters:StringToVisibilityConverter x:Key="StringToVisibility" />
             <converters:AddedToTextConverter x:Key="AddedToText" />

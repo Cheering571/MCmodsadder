@@ -4,7 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:views="clr-namespace:MCModPlus.Views"
                  Title="MCMod++ · MC Mod 批量添加工具"
-                 Icon="/MCModPlus;component/Assets/AppIcon.png"
+                 Icon="/MCModPlus;component/Assets/MCModPlus.png"
                  Width="1120" Height="740"
                  MinWidth="900" MinHeight="600"
                  WindowStartupLocation="CenterScreen"
@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
         <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}">
             <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="/MCModPlus;component/Assets/AppIcon.png" />
+                <ui:ImageIcon Source="/MCModPlus;component/Assets/MCModPlus.png" />
             </ui:TitleBar.Icon>
         </ui:TitleBar>
         <ui:NavigationView x:Name="NavView" Grid.Row="1"

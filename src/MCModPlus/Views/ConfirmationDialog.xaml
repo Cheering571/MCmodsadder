@@ -7,7 +7,6 @@
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="NoResize"
                  Title="MCMod++"
-                 Icon="/MCModPlus;component/Assets/AppIcon.png"
                  WindowBackdropType="Mica"
                  ExtendsContentIntoTitleBar="True"
                  FontFamily="Microsoft YaHei UI">
@@ -16,11 +15,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}" ShowMinimize="False" ShowMaximize="False">
-            <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="/MCModPlus;component/Assets/AppIcon.png" />
-            </ui:TitleBar.Icon>
-        </ui:TitleBar>
+        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}" ShowMinimize="False" ShowMaximize="False" />
         <Grid Grid.Row="1" Margin="22,20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />

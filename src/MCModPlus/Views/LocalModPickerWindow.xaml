@@ -13,11 +13,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}">
-            <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="/MCModPlus;component/Assets/AppIcon.png" />
-            </ui:TitleBar.Icon>
-        </ui:TitleBar>
+        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}" />
         <Grid Grid.Row="1" Margin="32,20,32,28">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
