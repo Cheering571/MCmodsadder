@@ -8,13 +8,8 @@ namespace MCModPlus.Services;
 
 public class SettingsService
 {
-    private const string LegacyAppName = "McModsAdder";
-
     public static readonly string DataDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MCModPlus");
-
-    private static readonly string LegacyDataDir =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LegacyAppName);
 
     private static readonly string SettingsPath = Path.Combine(DataDir, "settings.json");
 
@@ -32,10 +27,8 @@ public class SettingsService
     {
         try
         {
-            MigrateLegacyData();
-            var legacy = LoadSettingsFile(Path.Combine(LegacyDataDir, "settings.json"));
             var current = LoadSettingsFile(SettingsPath);
-            var settings = current ?? legacy;
+            var settings = current;
 
             if (settings != null)
             {
@@ -46,8 +39,8 @@ public class SettingsService
                     Current.CurseForgeApiKey = UnprotectApiKey(protectedApiKey) ?? string.Empty;
                 }
 
-                ScanRoots = MergePaths(legacy?.ScanRoots, current?.ScanRoots);
-                ExcludedInstancePaths = MergePaths(legacy?.ExcludedInstancePaths, current?.ExcludedInstancePaths);
+                ScanRoots = settings.ScanRoots ?? new List<string>();
+                ExcludedInstancePaths = settings.ExcludedInstancePaths ?? new List<string>();
             }
         }
         catch
@@ -187,38 +180,6 @@ public class SettingsService
         catch (CryptographicException)
         {
             return null;
-        }
-    }
-
-    private static List<string> MergePaths(params IEnumerable<string>?[] pathLists)
-    {
-        return pathLists
-            .Where(paths => paths != null)
-            .SelectMany(paths => paths!)
-            .Select(NormalizePath)
-            .Where(path => path != null)
-            .Select(path => path!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private static void MigrateLegacyData()
-    {
-        if (!Directory.Exists(LegacyDataDir))
-        {
-            return;
-        }
-
-        Directory.CreateDirectory(DataDir);
-        foreach (var source in Directory.EnumerateFiles(LegacyDataDir, "*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(LegacyDataDir, source);
-            var target = Path.Combine(DataDir, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            if (!File.Exists(target))
-            {
-                File.Copy(source, target);
-            }
         }
     }
 

@@ -3,10 +3,10 @@
 <p align="center">
   <strong>面向 Minecraft 整合包的 Mod 管理与批量补装工具</strong>
 </p>
-
 <p align="center">
-  <em>从「McModsAdder」更名而来，专注于让整合包换装和 Mod 管理更简单。</em>
+  <em>专注于让整合包换装和 Mod 管理更简单。</em>
 </p>
+
 
 > **项目状态：开发中**
 >
@@ -16,7 +16,11 @@
 
 MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、维护可复用的 Mod 配置表，并根据实例的 Minecraft 版本和 Mod 加载器批量补装缺失 Mod。
 
-软件名称已由原来的 **McModsAdder** 正式更名为 **MCMod++**。本次版本同时加入了 CurseForge 搜索支持和本地 Mod 库，在线 Mod 与本地 Mod 可以在同一套配置表中使用。
+软件名称已由原来的 **旧版项目名称** 正式更名为 **MCModPlus**。本次版本同时加入了 CurseForge 搜索支持和本地 Mod 库，在线 Mod 与本地 Mod 可以在同一套配置表中使用。
+
+## 开发说明
+
+本软件的开发工作全程由 **CodeBuddy** 协助完成并实际落地，包括代码编写、功能实现、问题修复、项目构建及相关开发工作。作者主要负责提出项目的初步想法、明确软件需求，并根据实际使用情况对软件后续功能和体验改进提出建议。感谢 CodeBuddy 在本项目开发过程中的协作与支持。
 
 ## 主要功能
 
@@ -64,19 +68,19 @@ dotnet build MCModPlus.sln -c Release
 运行项目：
 
 ```powershell
-dotnet run --project src/McModsAdder/MCModPlus.csproj
+dotnet run --project src/MCModPlus/MCModPlus.csproj
 ```
 
 生成 Windows x64 自包含单文件程序：
 
 ```powershell
-dotnet publish src/McModsAdder/MCModPlus.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish src/MCModPlus/MCModPlus.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 ```
 
 发布文件默认位于：
 
 ```text
-src/McModsAdder/bin/Release/net8.0-windows/win-x64/publish/
+src/MCModPlus/bin/Release/net8.0-windows/win-x64/publish/
 ```
 
 ## 数据与隐私
@@ -98,21 +102,6 @@ src/McModsAdder/bin/Release/net8.0-windows/win-x64/publish/
 - MCMod++ 与 Mojang Studios、Microsoft、PCL、HMCL、Modrinth、CurseForge、Fabric、Forge、Quilt 或 NeoForge 没有隶属、赞助或官方授权关系。
 - 本项目仅调用相关公开服务；Mod 文件、图标、名称、描述及其他第三方内容的版权和许可归原权利人所有。使用这些内容时请遵守对应服务条款和项目许可证。
 - 项目依赖的许可证信息以各依赖项目的官方许可证为准。
-
-## 贡献与反馈
-
-欢迎通过 GitHub Issues 反馈 Bug、提出功能建议或提交兼容性信息。提交问题时，建议附上：
-
-- 软件版本和 Windows 版本；
-- Minecraft 版本及 Mod 加载器；
-- 可复现步骤和错误现象；
-- 脱敏后的日志或截图。
-
-提交代码前请确保能够通过：
-
-```powershell
-dotnet build MCModPlus.sln --no-restore
-```
 
 ## 许可证与使用限制
 

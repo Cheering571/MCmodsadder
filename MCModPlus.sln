@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{61CE9E57-FE11-47CB-8D98-1D8943045F0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCModPlus", "src\McModsAdder\MCModPlus.csproj", "{91BE6B38-5061-473B-9A7D-2E139A9A376A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCModPlus", "src\MCModPlus\MCModPlus.csproj", "{91BE6B38-5061-473B-9A7D-2E139A9A376A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

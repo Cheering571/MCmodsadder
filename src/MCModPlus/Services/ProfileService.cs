@@ -96,8 +96,7 @@ public class ProfileService
         try
         {
             var export = JsonSerializer.Deserialize<ProfileExportFile>(File.ReadAllText(sourcePath));
-            if (export?.Entries == null ||
-                (export.Format != "mcmodplus-profile" && export.Format != "mcmodsadder-profile"))
+            if (export?.Entries == null || export.Format != "mcmodplus-profile")
             {
                 return null;
             }
