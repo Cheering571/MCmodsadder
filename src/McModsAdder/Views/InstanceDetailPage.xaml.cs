@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
-using McModsAdder.Services;
-using McModsAdder.ViewModels;
+using MCModPlus.Services;
+using MCModPlus.ViewModels;
 
-namespace McModsAdder.Views;
+namespace MCModPlus.Views;
 
 public partial class InstanceDetailPage : Page, INavigatedTo
 {

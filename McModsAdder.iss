@@ -1,7 +1,7 @@
-#define MyAppName "McModsAdder"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "McModsAdder"
-#define MyAppExeName "McModsAdder.exe"
+#define MyAppName "MCMod++"
+#define MyAppVersion "1.1.0"
+#define MyAppPublisher "MCMod++"
+#define MyAppExeName "MCModPlus.exe"
 
 [Setup]
 AppId={{8D8B8A6C-5F6B-4E58-9E8E-6E4B4D1E7A31}
@@ -14,7 +14,7 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=installer
-OutputBaseFilename=McModsAdder-Setup-{#MyAppVersion}-win-x64
+OutputBaseFilename=MCModPlus-Setup-{#MyAppVersion}-win-x64
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

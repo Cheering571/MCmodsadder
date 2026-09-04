@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using McModsAdder.Models;
-using McModsAdder.Services;
+using MCModPlus.Models;
+using MCModPlus.Services;
 
-namespace McModsAdder.Converters;
+namespace MCModPlus.Converters;
 
 public class LoaderToBrushConverter : IValueConverter
 {
@@ -13,13 +13,31 @@ public class LoaderToBrushConverter : IValueConverter
         value is ModLoader loader
             ? loader switch
             {
-                ModLoader.Fabric => new SolidColorBrush(Color.FromRgb(0xDB, 0xD0, 0xA8)),
-                ModLoader.Forge => new SolidColorBrush(Color.FromRgb(0x5F, 0x8F, 0xD8)),
-                ModLoader.Quilt => new SolidColorBrush(Color.FromRgb(0x9B, 0x6D, 0xD3)),
-                ModLoader.NeoForge => new SolidColorBrush(Color.FromRgb(0xE0, 0x86, 0x46)),
+                ModLoader.Fabric => new SolidColorBrush(Color.FromRgb(0xF3, 0xD0, 0x5A)),
+                ModLoader.Forge => new SolidColorBrush(Color.FromRgb(0xF0, 0x78, 0x32)),
+                ModLoader.Quilt => new SolidColorBrush(Color.FromRgb(0xB5, 0x7A, 0xED)),
+                ModLoader.NeoForge => new SolidColorBrush(Color.FromRgb(0x55, 0xCF, 0x8A)),
                 _ => new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))
             }
             : new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80));
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotImplementedException();
+}
+
+public class LoaderToBackgroundBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is ModLoader loader
+            ? loader switch
+            {
+                ModLoader.Fabric => new SolidColorBrush(Color.FromArgb(0x66, 0xF3, 0xD0, 0x5A)),
+                ModLoader.Forge => new SolidColorBrush(Color.FromArgb(0x66, 0xF0, 0x78, 0x32)),
+                ModLoader.Quilt => new SolidColorBrush(Color.FromArgb(0x66, 0xB5, 0x7A, 0xED)),
+                ModLoader.NeoForge => new SolidColorBrush(Color.FromArgb(0x66, 0x55, 0xCF, 0x8A)),
+                _ => new SolidColorBrush(Color.FromArgb(0x66, 0x6B, 0x72, 0x80))
+            }
+            : new SolidColorBrush(Color.FromArgb(0x66, 0x6B, 0x72, 0x80));
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotImplementedException();
@@ -34,10 +52,23 @@ public class LoaderToTextConverter : IValueConverter
         throw new NotImplementedException();
 }
 
+public class InstanceLoaderToTextConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is ModLoader loader
+            ? loader == ModLoader.Unknown ? "原版" : loader.ToDisplay()
+            : "原版";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotImplementedException();
+}
+
 public class GroupHeaderTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        value is ModLoader loader ? loader.ToDisplay() : value?.ToString() ?? "未知";
+        value is ModLoader loader
+            ? loader == ModLoader.Unknown ? "原版" : loader.ToDisplay()
+            : value?.ToString() ?? "未知";
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotImplementedException();
@@ -129,28 +160,6 @@ public class StringToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
 }
 
-public class FriendlyNumberConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        var n = value switch
-        {
-            long l => l,
-            int i => (long)i,
-            _ => 0L
-        };
-        return n switch
-        {
-            >= 100_000_000 => $"{n / 100_000_000.0:0.#} 亿",
-            >= 10_000 => $"{n / 10_000.0:0.#} 万",
-            _ => n.ToString()
-        };
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        throw new NotImplementedException();
-}
-
 public class AddedToTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
@@ -170,18 +179,3 @@ public class CountToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
 }
 
-public class IdentifyMethodToTextConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        value is ModIdentifyMethod m
-            ? m switch
-            {
-                ModIdentifyMethod.Hash => "精确",
-                ModIdentifyMethod.Metadata => "元数据",
-                _ => "未知"
-            }
-            : "未知";
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        throw new NotImplementedException();
-}

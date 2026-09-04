@@ -1,6 +1,6 @@
-using McModsAdder.Models;
+using MCModPlus.Models;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 /// <summary>
 /// 跨页面共享状态（当前选中实例、当前编辑配置表等）。

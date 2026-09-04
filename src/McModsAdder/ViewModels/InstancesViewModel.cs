@@ -3,12 +3,12 @@ using System.ComponentModel;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using McModsAdder.Models;
-using McModsAdder.Services;
-using McModsAdder.Views;
+using MCModPlus.Models;
+using MCModPlus.Services;
+using MCModPlus.Views;
 using Microsoft.Win32;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 public enum InstanceSortMode
 {
@@ -43,21 +43,32 @@ public partial class InstancesViewModel : ObservableObject
     private string _selectedGameVersion = "全部版本";
 
     [ObservableProperty]
-    private string _sortMode = "名称";
+    private string _sortMode = "MC 版本";
+
+    [ObservableProperty]
+    private bool _showVanilla;
 
     public ICollectionView InstancesView { get; }
 
-    public IReadOnlyList<string> LoaderOptions { get; } = new[]
-    {
-        "全部加载器", "Fabric", "Forge", "Quilt", "NeoForge", "未知"
-    };
+    public IReadOnlyList<string> LoaderOptions =>
+        new[] { "全部加载器" }
+            .Concat(Instances
+                .Select(i => i.Loader.ToDisplay())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(loader => loader, StringComparer.OrdinalIgnoreCase))
+            .ToList();
 
     public IReadOnlyList<string> GameVersionOptions =>
-        new[] { "全部版本" }.Concat(Instances.Select(i => i.GameVersion)
-            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)).ToList();
+        new[] { "全部版本" }.Concat(Instances
+            .Where(i => !string.IsNullOrWhiteSpace(i.GameVersion))
+            .OrderBy(i => i.GameVersionSortKey)
+            .Select(i => i.GameVersion)
+            .Distinct(StringComparer.OrdinalIgnoreCase))
+            .ToList();
 
-    public IReadOnlyList<string> SortModes { get; } = new[] { "名称", "MC 版本", "Mod 加载器" };
+    public IReadOnlyList<string> SortModes { get; } = new[] { "名称", "MC 版本", "加载器" };
+
+    public int VanillaInstanceCount => Instances.Count(instance => !instance.IsModded);
 
     public InstancesViewModel(InstanceScanner scanner, SettingsService settings, AppState appState, NavigationService nav)
     {
@@ -70,17 +81,41 @@ public partial class InstancesViewModel : ObservableObject
         ApplySort();
     }
 
-    partial void OnFilterTextChanged(string value) => InstancesView.Refresh();
+    partial void OnFilterTextChanged(string value)
+    {
+        InstancesView.Refresh();
+        UpdateHasInstances();
+    }
 
-    partial void OnSelectedLoaderChanged(string value) => InstancesView.Refresh();
+    partial void OnSelectedLoaderChanged(string value)
+    {
+        InstancesView.Refresh();
+        UpdateHasInstances();
+    }
 
-    partial void OnSelectedGameVersionChanged(string value) => InstancesView.Refresh();
+    partial void OnSelectedGameVersionChanged(string value)
+    {
+        InstancesView.Refresh();
+        UpdateHasInstances();
+    }
+
+    partial void OnShowVanillaChanged(bool value)
+    {
+        InstancesView.Refresh();
+        UpdateHasInstances();
+    }
 
     partial void OnSortModeChanged(string value) => ApplySort();
 
     private bool FilterInstance(object item)
     {
         if (item is not GameInstance instance)
+        {
+            return false;
+        }
+
+        if (_settings.IsExcluded(instance.DirectoryPath)
+            || (!ShowVanilla && !instance.IsModded))
         {
             return false;
         }
@@ -96,6 +131,11 @@ public partial class InstancesViewModel : ObservableObject
         return matchesText && matchesLoader && matchesVersion;
     }
 
+    private void UpdateHasInstances()
+    {
+        HasInstances = InstancesView.Cast<GameInstance>().Any();
+    }
+
     private void ApplySort()
     {
         using (InstancesView.DeferRefresh())
@@ -105,23 +145,34 @@ public partial class InstancesViewModel : ObservableObject
 
             var sortProperty = SortMode switch
             {
-                "MC 版本" => nameof(GameInstance.GameVersion),
-                "Mod 加载器" => nameof(GameInstance.Loader),
+                "MC 版本" => nameof(GameInstance.GameVersionSortKey),
+                "加载器" => nameof(GameInstance.Loader),
                 _ => nameof(GameInstance.Name)
             };
             InstancesView.SortDescriptions.Add(new SortDescription(sortProperty, ListSortDirection.Ascending));
             InstancesView.SortDescriptions.Add(new SortDescription(nameof(GameInstance.Name), ListSortDirection.Ascending));
 
-            if (SortMode is "MC 版本" or "Mod 加载器")
+            if (SortMode == "MC 版本")
+            {
+                InstancesView.GroupDescriptions.Add(new PropertyGroupDescription(nameof(GameInstance.GameVersion)));
+            }
+            else if (SortMode == "加载器")
             {
                 InstancesView.GroupDescriptions.Add(new PropertyGroupDescription(sortProperty));
             }
         }
     }
 
-    private void RefreshVersionOptions()
+    private void RefreshFilterOptions()
     {
+        OnPropertyChanged(nameof(LoaderOptions));
         OnPropertyChanged(nameof(GameVersionOptions));
+
+        if (SelectedLoader != "全部加载器" && !LoaderOptions.Contains(SelectedLoader))
+        {
+            SelectedLoader = "全部加载器";
+        }
+
         if (SelectedGameVersion != "全部版本" && !GameVersionOptions.Contains(SelectedGameVersion))
         {
             SelectedGameVersion = "全部版本";
@@ -130,19 +181,14 @@ public partial class InstancesViewModel : ObservableObject
 
     public void ScanDefault()
     {
-        var roots = new List<string>();
-        var defaultDir = InstanceScanner.GetDefaultMinecraftDir();
-        if (defaultDir != null)
-        {
-            roots.Add(defaultDir);
-        }
-        roots.AddRange(_settings.ScanRoots);
-        ScanRoots(roots.Distinct().ToList());
+        var instances = _scanner.ScanAll(_settings.ScanRoots)
+            .Where(instance => !_settings.IsExcluded(instance.DirectoryPath))
+            .ToList();
+        ReplaceInstances(instances);
 
-        if (roots.Count == 0)
-        {
-            StatusText = "未找到默认 .minecraft 目录，请点击「选择目录」手动指定整合包位置";
-        }
+        StatusText = instances.Count > 0
+            ? $"共发现 {instances.Count} 个实例"
+            : "未找到游戏实例，请点击「选择整合包目录」添加自定义目录";
     }
 
     [RelayCommand]
@@ -162,7 +208,8 @@ public partial class InstancesViewModel : ObservableObject
 
         var path = dialog.FolderName;
         _settings.AddScanRoot(path);
-        ScanRoots(new List<string> { path });
+        ReplaceInstances(_scanner.ScanAll(_settings.ScanRoots)
+            .Where(instance => !_settings.IsExcluded(instance.DirectoryPath)));
 
         if (Instances.Count == 0)
         {
@@ -170,28 +217,34 @@ public partial class InstancesViewModel : ObservableObject
         }
     }
 
-    private void ScanRoots(List<string> roots)
+    private void ReplaceInstances(IEnumerable<GameInstance> instances)
     {
-        var found = new Dictionary<string, GameInstance>(StringComparer.OrdinalIgnoreCase);
-        foreach (var root in roots)
-        {
-            foreach (var inst in _scanner.Scan(root))
-            {
-                found[inst.DirectoryPath] = inst;
-            }
-        }
-
         Instances.Clear();
-        foreach (var instance in found.Values)
+        foreach (var instance in instances)
         {
             Instances.Add(instance);
         }
-        RefreshVersionOptions();
+        OnPropertyChanged(nameof(VanillaInstanceCount));
+
+        RefreshFilterOptions();
         InstancesView.Refresh();
-        HasInstances = Instances.Count > 0;
+        UpdateHasInstances();
         StatusText = Instances.Count > 0
             ? $"共发现 {Instances.Count} 个实例"
             : StatusText;
+    }
+
+    [RelayCommand]
+    private void DeleteInstance(GameInstance instance)
+    {
+        if (instance == null) return;
+
+        _settings.ExcludeInstance(instance.DirectoryPath);
+        Instances.Remove(instance);
+        OnPropertyChanged(nameof(VanillaInstanceCount));
+        RefreshFilterOptions();
+        InstancesView.Refresh();
+        HasInstances = InstancesView.Cast<GameInstance>().Any();
     }
 
     [RelayCommand]

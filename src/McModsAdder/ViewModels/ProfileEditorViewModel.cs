@@ -2,10 +2,10 @@ using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using McModsAdder.Models;
-using McModsAdder.Services;
+using MCModPlus.Models;
+using MCModPlus.Services;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 /// <summary>搜索结果行（带图标与"已添加"状态）</summary>
 public partial class SearchResultItem : ObservableObject
@@ -52,11 +52,29 @@ public partial class ProfileEntryItem : ObservableObject
     }
 }
 
+public sealed class SearchSourceOption
+{
+    public string Key { get; }
+    public string Label { get; }
+    public string IconText { get; }
+    public string? SecondaryIconText { get; }
+    public bool HasSecondaryIcon => !string.IsNullOrWhiteSpace(SecondaryIconText);
+
+    public SearchSourceOption(string key, string label, string iconText, string? secondaryIconText = null)
+    {
+        Key = key;
+        Label = label;
+        IconText = iconText;
+        SecondaryIconText = secondaryIconText;
+    }
+}
+
 public partial class ProfileEditorViewModel : ObservableObject
 {
     private readonly AppState _appState;
     private readonly ProfileService _profileService;
     private readonly IModProvider _provider;
+    private readonly LocalModLibraryService _localLibrary;
     private readonly NavigationService _nav;
     private CancellationTokenSource? _searchCts;
 
@@ -67,6 +85,8 @@ public partial class ProfileEditorViewModel : ObservableObject
     private ObservableCollection<ProfileEntry> _entries = new();
 
     public ObservableCollection<ProfileEntryItem> EntryItems { get; } = new();
+
+    public ObservableCollection<LocalMod> LocalMods { get; } = new();
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -89,18 +109,44 @@ public partial class ProfileEditorViewModel : ObservableObject
     [ObservableProperty]
     private int _pageSize = 6;
 
+    public IReadOnlyList<SearchSourceOption> SearchSourceOptions { get; } = new[]
+    {
+        new SearchSourceOption("All", "全部", "Modrinth", "CurseForge"),
+        new SearchSourceOption("Modrinth", "Modrinth", "Modrinth"),
+        new SearchSourceOption("CurseForge", "CurseForge", "CurseForge")
+    };
+
+    [ObservableProperty]
+    private SearchSourceOption _selectedSearchSource = null!;
+
+    public string SearchPlaceholder => SelectedSearchSource.Key switch
+    {
+        "Modrinth" => "搜索Modrinth上的mod",
+        "CurseForge" => "搜索CurseForge上的mod",
+        _ => "搜索全部mod"
+    };
+
+    private ModSearchSource SearchSource => SelectedSearchSource.Key switch
+    {
+        "Modrinth" => ModSearchSource.Modrinth,
+        "CurseForge" => ModSearchSource.CurseForge,
+        _ => ModSearchSource.All
+    };
+
     public string PageStatus => TotalPages == 0 ? "" : $"第 {CurrentPage} / {TotalPages} 页";
 
     public bool CanPreviousPage => CurrentPage > 1;
 
     public bool CanNextPage => CurrentPage < TotalPages;
 
-    public ProfileEditorViewModel(AppState appState, ProfileService profileService, IModProvider provider, NavigationService nav)
+    public ProfileEditorViewModel(AppState appState, ProfileService profileService, IModProvider provider, LocalModLibraryService localLibrary, NavigationService nav)
     {
         _appState = appState;
         _profileService = profileService;
         _provider = provider;
+        _localLibrary = localLibrary;
         _nav = nav;
+        SelectedSearchSource = SearchSourceOptions[1];
     }
 
     public void UpdatePageSize(double availableHeight)
@@ -160,7 +206,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         IsSearching = true;
         try
         {
-            var page = await _provider.SearchAsync(SearchText.Trim(), PageSize, (CurrentPage - 1) * PageSize, ct);
+            var page = await _provider.SearchAsync(SearchText.Trim(), PageSize, (CurrentPage - 1) * PageSize, ct, SearchSource);
             var existingIds = Entries.Select(e => e.ProjectId).ToHashSet();
             SearchResults = new ObservableCollection<SearchResultItem>(
                 page.Results.Select(r => new SearchResultItem(r) { IsAdded = existingIds.Contains(r.ProjectId) }));
@@ -200,6 +246,12 @@ public partial class ProfileEditorViewModel : ObservableObject
             ? new ObservableCollection<ProfileEntry>(Profile.Entries)
             : new ObservableCollection<ProfileEntry>();
         EntryItems.Clear();
+        _localLibrary.Load();
+        LocalMods.Clear();
+        foreach (var localMod in _localLibrary.Mods)
+        {
+            LocalMods.Add(localMod);
+        }
         foreach (var entry in Entries)
         {
             EntryItems.Add(new ProfileEntryItem(entry));
@@ -232,6 +284,17 @@ public partial class ProfileEditorViewModel : ObservableObject
         }
     }
 
+    partial void OnSelectedSearchSourceChanged(SearchSourceOption value)
+    {
+        OnPropertyChanged(nameof(SearchPlaceholder));
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            CurrentPage = 1;
+            SearchHint = string.Empty;
+            _ = SearchCurrentPageAsync();
+        }
+    }
+
     partial void OnSearchTextChanged(string value)
     {
         UpdateEntryHighlights(value);
@@ -256,6 +319,28 @@ public partial class ProfileEditorViewModel : ObservableObject
         CurrentPage = 1;
         SearchHint = string.Empty;
         _ = SearchCurrentPageAsync();
+    }
+
+    public bool IsLocalModAdded(LocalMod mod) => Profile?.Entries.Any(entry => entry.LocalModId == mod.Id) == true;
+
+    [RelayCommand]
+    private void AddLocalMod(LocalMod mod)
+    {
+        if (Profile == null || IsLocalModAdded(mod)) return;
+        var entry = new ProfileEntry
+        {
+            ProjectId = string.Empty,
+            LocalModId = mod.Id,
+            Name = mod.Name,
+            Summary = $"本地 Mod · {mod.Loader.ToDisplay()} · MC {mod.GameVersion}",
+            LocalVersion = mod.Version,
+            LocalLoader = mod.Loader,
+            LocalGameVersion = mod.GameVersion
+        };
+        Profile.Entries.Add(entry);
+        Entries.Add(entry);
+        EntryItems.Add(new ProfileEntryItem(entry));
+        _profileService.Save(Profile);
     }
 
     [RelayCommand]
@@ -289,6 +374,19 @@ public partial class ProfileEditorViewModel : ObservableObject
     {
         if (Profile == null)
         {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(entry.LocalModId))
+        {
+            Profile.Entries.RemoveAll(e => e.LocalModId == entry.LocalModId);
+            Entries.Remove(entry);
+            var localEntryItem = EntryItems.FirstOrDefault(e => e.Entry.LocalModId == entry.LocalModId);
+            if (localEntryItem != null)
+            {
+                EntryItems.Remove(localEntryItem);
+            }
+            _profileService.Save(Profile);
             return;
         }
 

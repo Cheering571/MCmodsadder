@@ -1,6 +1,7 @@
 using System.IO;
+using System.Text.RegularExpressions;
 
-namespace McModsAdder.Models;
+namespace MCModPlus.Models;
 
 public enum ModIdentifyMethod
 {
@@ -27,6 +28,8 @@ public class InstalledMod
 
     public string? ProjectName { get; set; }
 
+    public string? IconUrl { get; set; }
+
     public string? MatchedVersionId { get; set; }
 
     public string? MatchedVersionNumber { get; set; }
@@ -38,6 +41,15 @@ public class InstalledMod
 
     public string? MetadataVersion { get; set; }
 
+    /// <summary>从 Mod 元数据依赖或插件声明中识别的 Minecraft 版本范围。</summary>
+    public string? MetadataGameVersion { get; set; }
+
+    /// <summary>从 jar Manifest 读取的实现版本。</summary>
+    public string? ManifestVersion { get; set; }
+
+    /// <summary>从 jar Manifest 读取的 Minecraft 版本或版本范围。</summary>
+    public string? ManifestGameVersion { get; set; }
+
     public ModIdentifyMethod IdentifyMethod { get; set; } = ModIdentifyMethod.None;
 
     public string DisplayName =>
@@ -47,5 +59,23 @@ public class InstalledMod
         ?? Path.GetFileNameWithoutExtension(FileName);
 
     public string DisplayVersion =>
-        MatchedVersionNumber ?? MetadataVersion ?? string.Empty;
+        CleanVersion(MatchedVersionNumber)
+        ?? CleanVersion(MetadataVersion)
+        ?? CleanVersion(ManifestVersion)
+        ?? "未知";
+
+    public string DisplayGameVersion =>
+        MetadataGameVersion
+        ?? ManifestGameVersion
+        ?? string.Empty;
+
+    private static string? CleanVersion(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var cleaned = value.Trim().Trim('"', '\'');
+        cleaned = Regex.Replace(cleaned, @"\$\{[^}]+}", string.Empty).Trim(' ', '-', '_', '.', '(', ')');
+        return string.IsNullOrWhiteSpace(cleaned) || cleaned.Contains('=') || cleaned.Contains("${", StringComparison.Ordinal)
+            ? null
+            : cleaned;
+    }
 }

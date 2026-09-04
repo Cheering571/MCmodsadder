@@ -1,13 +1,13 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using McModsAdder.Helpers;
-using McModsAdder.Services;
-using McModsAdder.ViewModels;
-using McModsAdder.Views;
+using MCModPlus.Helpers;
+using MCModPlus.Services;
+using MCModPlus.ViewModels;
+using MCModPlus.Views;
 using Wpf.Ui.Controls;
 
-namespace McModsAdder;
+namespace MCModPlus;
 
 public partial class MainWindow : FluentWindow
 {
@@ -28,6 +28,16 @@ public partial class MainWindow : FluentWindow
 
         // 滚轮重定向：焦点不在内容区时也能用滚轮滚动鼠标下方的滚动区
         PreviewMouseWheel += ScrollHelper.HandleWheel;
+        PreviewMouseDown += OnWindowPreviewMouseDown;
+    }
+
+    private void OnWindowPreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.GetPosition(NavView).X <= NavView.OpenPaneLength
+            && _currentPage is INavigatedFrom page)
+        {
+            page.OnNavigatedFrom();
+        }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -38,7 +48,7 @@ public partial class MainWindow : FluentWindow
         }
 
         _initialNavigationCompleted = true;
-        _nav.Navigate<InstancesPage>();
+        _nav.Navigate<HomePage>();
         Dispatcher.BeginInvoke(DisableNavigationHostScrollViewer);
     }
 
@@ -75,6 +85,11 @@ public partial class MainWindow : FluentWindow
 
     private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
     {
+        if (_currentPage is INavigatedFrom previousPage)
+        {
+            previousPage.OnNavigatedFrom();
+        }
+
         if (args.Page is Page page)
         {
             _currentPage = page;
@@ -85,53 +100,6 @@ public partial class MainWindow : FluentWindow
                 aware.OnNavigatedTo();
             }
         }
-    }
-
-    private Point _detailDragStartScreen;
-    private double _detailStartHorizontalOffset;
-    private double _detailStartVerticalOffset;
-
-    public void ShowModDetail(ModSearchResult result)
-    {
-        ModDetailPanel.DataContext = new ModDetailViewModel(result);
-        DetailPopup.HorizontalOffset = 0;
-        DetailPopup.VerticalOffset = 0;
-        DetailPopup.IsOpen = true;
-        ModDetailPanel.Focus();
-    }
-
-    private void DetailPopup_Closed(object? sender, EventArgs e)
-    {
-        ModDetailPanel.ReleaseMouseCapture();
-    }
-
-    private void ModDetailPanel_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        _detailDragStartScreen = ModDetailPanel.PointToScreen(e.GetPosition(ModDetailPanel));
-        _detailStartHorizontalOffset = DetailPopup.HorizontalOffset;
-        _detailStartVerticalOffset = DetailPopup.VerticalOffset;
-        ModDetailPanel.CaptureMouse();
-        e.Handled = true;
-    }
-
-    private void ModDetailPanel_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (!ModDetailPanel.IsMouseCaptured)
-        {
-            return;
-        }
-
-        var currentScreen = ModDetailPanel.PointToScreen(e.GetPosition(ModDetailPanel));
-        var deltaX = currentScreen.X - _detailDragStartScreen.X;
-        var deltaY = currentScreen.Y - _detailDragStartScreen.Y;
-        DetailPopup.HorizontalOffset = _detailStartHorizontalOffset + deltaX;
-        DetailPopup.VerticalOffset = _detailStartVerticalOffset + deltaY;
-    }
-
-    private void ModDetailPanel_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        ModDetailPanel.ReleaseMouseCapture();
-        e.Handled = true;
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
-using McModsAdder.Models;
+using MCModPlus.Models;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 /// <summary>搜索结果条目</summary>
 public class ModSearchResult
@@ -14,6 +14,7 @@ public class ModSearchResult
     public long Downloads { get; set; }
     public string SourceUrl { get; set; } = string.Empty;
     public string McModUrl { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
 }
 
 public class ModSearchPage
@@ -43,6 +44,19 @@ public class ModDependencyInfo
     public bool Required { get; set; }
 }
 
+public class ModProjectInfo
+{
+    public string Name { get; set; } = string.Empty;
+    public string IconUrl { get; set; } = string.Empty;
+}
+
+public enum ModSearchSource
+{
+    All,
+    Modrinth,
+    CurseForge
+}
+
 /// <summary>
 /// Mod 来源平台抽象。一期实现 Modrinth，二期接入 CurseForge。
 /// </summary>
@@ -50,7 +64,7 @@ public interface IModProvider
 {
     string Name { get; }
 
-    Task<ModSearchPage> SearchAsync(string query, int limit = 20, int offset = 0, CancellationToken ct = default);
+    Task<ModSearchPage> SearchAsync(string query, int limit = 20, int offset = 0, CancellationToken ct = default, ModSearchSource source = ModSearchSource.All);
 
     /// <summary>
     /// 按 MC 版本 + 加载器取最新匹配版本。loader 为 Quilt 时内部自动回退附加 fabric 过滤。
@@ -67,6 +81,10 @@ public interface IModProvider
     /// 批量获取项目名（用于哈希命中后的名称展示）。key 为项目 ID。
     /// </summary>
     Task<IReadOnlyDictionary<string, string>> GetProjectNamesAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<string, string>> GetProjectIconsAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<string, ModProjectInfo>> GetProjectInfosAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default);
 
     /// <summary>
     /// 下载文件到指定路径并校验 sha1。失败抛异常。

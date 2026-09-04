@@ -1,11 +1,11 @@
 using System.IO;
 using System.Text.Json;
-using McModsAdder.Models;
+using MCModPlus.Models;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 /// <summary>
-/// 配置表 CRUD 与导入导出。存储于 %APPDATA%/McModsAdder/profiles/*.json
+/// 配置表 CRUD 与导入导出。存储于 %APPDATA%/MCModPlus/profiles/*.json
 /// </summary>
 public class ProfileService
 {
@@ -82,7 +82,7 @@ public class ProfileService
     {
         var export = new ProfileExportFile
         {
-            Format = "mcmodsadder-profile",
+            Format = "mcmodplus-profile",
             Version = 1,
             Name = profile.Name,
             Entries = profile.Entries
@@ -96,7 +96,8 @@ public class ProfileService
         try
         {
             var export = JsonSerializer.Deserialize<ProfileExportFile>(File.ReadAllText(sourcePath));
-            if (export?.Entries == null || export.Format != "mcmodsadder-profile")
+            if (export?.Entries == null ||
+                (export.Format != "mcmodplus-profile" && export.Format != "mcmodsadder-profile"))
             {
                 return null;
             }

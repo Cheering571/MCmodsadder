@@ -1,4 +1,4 @@
-<ui:FluentWindow x:Class="McModsAdder.Views.InputDialog"
+<ui:FluentWindow x:Class="MCModPlus.Views.InputDialog"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -6,8 +6,8 @@
                  SizeToContent="Height"
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="NoResize"
-                 Title="McModsAdder"
-                 Icon="/McModsAdder;component/Assets/AppIcon.png"
+                 Title="MCMod++"
+                 Icon="/MCModPlus;component/Assets/AppIcon.png"
                  WindowBackdropType="Mica"
                  ExtendsContentIntoTitleBar="True"
                  FontFamily="Microsoft YaHei UI">
@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
         <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}" ShowMinimize="False" ShowMaximize="False">
             <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="/McModsAdder;component/Assets/AppIcon.png" />
+                <ui:ImageIcon Source="/MCModPlus;component/Assets/AppIcon.png" />
             </ui:TitleBar.Icon>
         </ui:TitleBar>
         <Grid Grid.Row="1" Margin="20">

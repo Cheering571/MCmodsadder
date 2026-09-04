@@ -1,10 +1,13 @@
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
-using McModsAdder.Models;
-using McModsAdder.Providers;
+using System.Text.RegularExpressions;
+using MCModPlus.Models;
+using MCModPlus.Providers;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
+
+public sealed record ModScanProgress(string Stage, int Percentage);
 
 /// <summary>
 /// 识别 mods 目录中已安装的 mod：
@@ -14,23 +17,41 @@ namespace McModsAdder.Services;
 public class ModJarAnalyzer
 {
     private readonly IModProvider _provider;
+    private string? _cachedInstancePath;
+    private string? _cachedSignature;
+    private List<InstalledMod>? _cachedMods;
 
     public ModJarAnalyzer(IModProvider provider)
     {
         _provider = provider;
     }
 
-    public async Task AnalyzeAsync(GameInstance instance, IProgress<int>? progress = null, CancellationToken ct = default)
+    public async Task AnalyzeAsync(GameInstance instance, IProgress<ModScanProgress>? progress = null, CancellationToken ct = default)
     {
-        var files = InstanceScanner.EnumerateModFiles(instance.ModsPath);
+        progress?.Report(new ModScanProgress("正在遍历 mod 文件", 5));
+        var files = InstanceScanner.EnumerateModFiles(instance.ModsPath).ToList();
+        var signature = string.Join("|", files.Select(file =>
+        {
+            var info = new FileInfo(file);
+            return $"{file}:{info.Length}:{info.LastWriteTimeUtc.Ticks}";
+        }));
+        if (string.Equals(_cachedInstancePath, instance.ModsPath, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(_cachedSignature, signature, StringComparison.Ordinal))
+        {
+            instance.InstalledMods = _cachedMods!.ToList();
+            progress?.Report(new ModScanProgress("已使用缓存识别结果", 100));
+            return;
+        }
+
         var mods = files.Select(f => new InstalledMod
         {
             FileName = Path.GetFileName(f),
             FullPath = f
         }).ToList();
 
+        progress?.Report(new ModScanProgress("正在计算 mod 哈希", 10));
         // ---- 阶段一：并行哈希 ----
-        var semaphore = new SemaphoreSlim(4);
+        var semaphore = new SemaphoreSlim(Math.Min(Environment.ProcessorCount, 8));
         var done = 0;
         var hashTasks = mods.Select(async mod =>
         {
@@ -41,16 +62,17 @@ public class ModJarAnalyzer
             }
             catch
             {
-                // 单个文件哈希失败不影响整体
             }
             finally
             {
                 semaphore.Release();
                 var current = Interlocked.Increment(ref done);
-                progress?.Report(current * 100 / Math.Max(mods.Count, 1));
+                progress?.Report(new ModScanProgress("正在计算 mod 哈希", 10 + current * 45 / Math.Max(mods.Count, 1)));
             }
         });
         await Task.WhenAll(hashTasks);
+
+        progress?.Report(new ModScanProgress("正在匹配 Modrinth 项目", 60));
 
         // ---- 阶段二：批量哈希匹配 ----
         var hashToMod = mods.Where(m => !string.IsNullOrEmpty(m.Sha1))
@@ -62,7 +84,7 @@ public class ModJarAnalyzer
             {
                 var matched = await _provider.MatchHashesAsync(hashToMod.Keys.ToList(), ct);
                 var projectIds = matched.Values.Select(v => v.ProjectId).Distinct().ToList();
-                var names = await _provider.GetProjectNamesAsync(projectIds, ct);
+                var projectInfos = await _provider.GetProjectInfosAsync(projectIds, ct);
 
                 foreach (var (hash, info) in matched)
                 {
@@ -72,9 +94,10 @@ public class ModJarAnalyzer
                         mod.MatchedVersionId = info.VersionId;
                         mod.MatchedVersionNumber = info.VersionNumber;
                         mod.IdentifyMethod = ModIdentifyMethod.Hash;
-                        if (names.TryGetValue(info.ProjectId, out var projectName))
+                        if (projectInfos.TryGetValue(info.ProjectId, out var projectInfo))
                         {
-                            mod.ProjectName = projectName;
+                            mod.IconUrl = projectInfo.IconUrl;
+                            mod.ProjectName = projectInfo.Name;
                         }
                     }
                 }
@@ -86,6 +109,7 @@ public class ModJarAnalyzer
         }
 
         // ---- 阶段三：未命中 jar 解析元数据 ----
+        progress?.Report(new ModScanProgress("正在解析未匹配 mod 元数据", 75));
         var unmatched = mods.Where(m => m.IdentifyMethod == ModIdentifyMethod.None).ToList();
         var metaTasks = unmatched.Select(async mod =>
         {
@@ -106,12 +130,17 @@ public class ModJarAnalyzer
         await Task.WhenAll(metaTasks);
 
         instance.InstalledMods = mods.OrderBy(m => m.DisplayName).ToList();
+        _cachedInstancePath = instance.ModsPath;
+        _cachedSignature = signature;
+        _cachedMods = instance.InstalledMods.ToList();
+        progress?.Report(new ModScanProgress("已完成 Mod 识别", 100));
     }
 
     /// <summary>解析 jar 内各加载器的元数据文件，填充兜底信息</summary>
     public static void ParseJarMetadata(InstalledMod mod)
     {
         using var zip = ZipFile.OpenRead(mod.FullPath);
+        ParseManifest(zip, mod);
 
         // Fabric
         var fabricEntry = zip.GetEntry("fabric.mod.json");
@@ -122,7 +151,12 @@ public class ModJarAnalyzer
             var root = doc.RootElement;
             mod.ModId = GetStringProp(root, "id");
             mod.MetadataName = GetStringProp(root, "name");
-            mod.MetadataVersion = GetStringProp(root, "version");
+            mod.MetadataVersion = NormalizeModVersion(GetStringProp(root, "version"));
+            if (root.TryGetProperty("depends", out var dependencies)
+                && dependencies.TryGetProperty("minecraft", out var minecraft))
+            {
+                mod.MetadataGameVersion = ExtractMinecraftVersionFromConstraint(minecraft);
+            }
             mod.IdentifyMethod = ModIdentifyMethod.Metadata;
             return;
         }
@@ -136,10 +170,15 @@ public class ModJarAnalyzer
             if (doc.RootElement.TryGetProperty("quilt_loader", out var loader))
             {
                 mod.ModId = GetStringProp(loader, "id");
-                mod.MetadataVersion = GetStringProp(loader, "version");
+                mod.MetadataVersion = NormalizeModVersion(GetStringProp(loader, "version"));
                 if (loader.TryGetProperty("metadata", out var meta))
                 {
                     mod.MetadataName = GetStringProp(meta, "name");
+                }
+                if (loader.TryGetProperty("depends", out var dependencies)
+                    && dependencies.TryGetProperty("minecraft", out var minecraft))
+                {
+                    mod.MetadataGameVersion = ExtractMinecraftVersionFromConstraint(minecraft);
                 }
             }
             mod.IdentifyMethod = ModIdentifyMethod.Metadata;
@@ -157,6 +196,18 @@ public class ModJarAnalyzer
             return;
         }
 
+        // Bukkit / Spigot 插件
+        var pluginEntry = zip.GetEntry("plugin.yml") ?? zip.GetEntry("paper-plugin.yml");
+        if (pluginEntry != null)
+        {
+            using var reader = new StreamReader(pluginEntry.Open());
+            var yaml = reader.ReadToEnd();
+            mod.ModId = GetYamlValue(yaml, "name");
+            mod.MetadataName = GetYamlValue(yaml, "name");
+            mod.MetadataVersion = GetYamlValue(yaml, "version");
+            mod.MetadataGameVersion = NormalizeGameVersionRange(GetYamlValue(yaml, "api-version"));
+            mod.IdentifyMethod = ModIdentifyMethod.Metadata;
+        }
         // 远古 Forge（mcmod.info）
         var legacyEntry = zip.GetEntry("mcmod.info");
         if (legacyEntry != null)
@@ -168,7 +219,11 @@ public class ModJarAnalyzer
                 : doc.RootElement;
             mod.ModId = GetStringProp(first, "modid");
             mod.MetadataName = GetStringProp(first, "name");
-            mod.MetadataVersion = GetStringProp(first, "version");
+            mod.MetadataVersion = NormalizeModVersion(GetStringProp(first, "version"));
+            mod.MetadataGameVersion = NormalizeGameVersionRange(
+                GetStringProp(first, "mcversion")
+                ?? GetStringProp(first, "mcVersion")
+                ?? GetStringProp(first, "modMcVersion"));
             mod.IdentifyMethod = ModIdentifyMethod.Metadata;
         }
     }
@@ -178,24 +233,105 @@ public class ModJarAnalyzer
         try
         {
             var table = Tomlyn.Toml.ToModel(tomlText);
-            if (table.TryGetValue("mods", out var modsObj) &&
-                modsObj is Tomlyn.Model.TomlTableArray modsArray && modsArray.Count > 0)
+            if (table.TryGetValue("mods", out var modsObj)
+                && modsObj is Tomlyn.Model.TomlTableArray modsArray && modsArray.Count > 0)
             {
                 var first = modsArray[0];
                 mod.ModId = GetTomlString(first, "modId");
                 mod.MetadataName = GetTomlString(first, "displayName");
-                mod.MetadataVersion = GetTomlString(first, "version");
-                // 清理 ${file.jarVersion} 之类的占位符
-                if (mod.MetadataVersion?.Contains("${") == true)
-                {
-                    mod.MetadataVersion = null;
-                }
+                mod.MetadataVersion = NormalizeModVersion(GetTomlString(first, "version"));
             }
+
+            mod.MetadataGameVersion = FindMinecraftDependencyRange(table);
         }
         catch
         {
-            // toml 解析失败保持空值
+            // TOML 解析失败时保留 Manifest 等其他来源的结果。
         }
+    }
+
+    private static string? FindMinecraftDependencyRange(Tomlyn.Model.TomlTable table)
+    {
+        if (!table.TryGetValue("dependencies", out var dependencies)) return null;
+
+        IEnumerable<Tomlyn.Model.TomlTable> EnumerateDependencies() => dependencies switch
+        {
+            Tomlyn.Model.TomlTableArray array => array,
+            Tomlyn.Model.TomlTable dependencyTable => dependencyTable.Values
+                .OfType<Tomlyn.Model.TomlTableArray>()
+                .SelectMany(array => array),
+            _ => Enumerable.Empty<Tomlyn.Model.TomlTable>()
+        };
+
+        foreach (var dependency in EnumerateDependencies())
+        {
+            if (GetTomlString(dependency, "modId")?.Equals("minecraft", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return NormalizeGameVersionRange(GetTomlString(dependency, "versionRange")
+                    ?? GetTomlString(dependency, "version"));
+            }
+        }
+
+        return null;
+    }
+
+    private static void ParseManifest(ZipArchive zip, InstalledMod mod)
+    {
+        var entry = zip.GetEntry("META-INF/MANIFEST.MF");
+        if (entry == null) return;
+        using var reader = new StreamReader(entry.Open());
+        var attributes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in reader.ReadToEnd().Split('\n'))
+        {
+            var separator = line.IndexOf(':');
+            if (separator <= 0) continue;
+            attributes[line[..separator].Trim()] = line[(separator + 1)..].Trim();
+        }
+
+        mod.ManifestVersion = NormalizeModVersion(FirstAttribute(attributes, "Implementation-Version", "Bundle-Version", "Specification-Version"));
+        mod.ManifestGameVersion = NormalizeGameVersionRange(FirstAttribute(attributes,
+            "Minecraft-Version", "Minecraft-Version-Range", "MinecraftVersion", "Target-Minecraft-Version"));
+    }
+
+    private static string? FirstAttribute(IReadOnlyDictionary<string, string> attributes, params string[] names) =>
+        names.Select(name => attributes.TryGetValue(name, out var value) ? value : null)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+    private static string? NormalizeModVersion(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var cleaned = value.Trim().Trim('"', '\'');
+        if (cleaned.Contains("${", StringComparison.Ordinal) || cleaned.Contains("file.jarVersion", StringComparison.OrdinalIgnoreCase)) return null;
+        cleaned = Regex.Replace(cleaned, @"(?i)^(?:version|ver)\s*[:=]\s*", string.Empty).Trim();
+        return cleaned.Length == 0 ? null : cleaned;
+    }
+
+    private static string? NormalizeGameVersionRange(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var cleaned = value.Trim().Trim('"', '\'');
+        var matches = Regex.Matches(cleaned, @"(?<![\d.])(?:1\.\d+(?:\.\d+)?|\d{2}\.\d+)(?![\d.])")
+            .Select(match => match.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (matches.Count == 0) return null;
+        if (matches.Count == 1) return matches[0];
+        var separator = cleaned.Contains("||", StringComparison.Ordinal) || cleaned.Contains(',', StringComparison.Ordinal) ? " / " : " - ";
+        return string.Join(separator, matches);
+    }
+
+    private static string? ExtractMinecraftVersionFromConstraint(JsonElement value)
+    {
+        var text = value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : value.ValueKind == JsonValueKind.Array
+                ? string.Join(" ", value.EnumerateArray().Select(item => item.ToString()))
+                : null;
+        return NormalizeGameVersionRange(text);
+    }
+
+    private static string? GetYamlValue(string text, string key)
+    {
+        var match = Regex.Match(text, $"(?m)^\\s*{Regex.Escape(key)}\\s*:\\s*[\\\"']?([^\\r\\n#\\\"']+)");
+        return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
     private static string? GetTomlString(Tomlyn.Model.TomlTable table, string key) =>

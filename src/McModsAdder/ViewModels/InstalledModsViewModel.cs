@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using McModsAdder.Models;
+using MCModPlus.Models;
+using MCModPlus.Services;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 public partial class InstalledModItem : ObservableObject
 {
@@ -16,7 +18,19 @@ public partial class InstalledModItem : ObservableObject
     [ObservableProperty]
     private bool _isHighlighted;
 
-    public InstalledModItem(InstalledMod mod) => Mod = mod;
+    [ObservableProperty]
+    private BitmapImage? _icon;
+
+    public InstalledModItem(InstalledMod mod)
+    {
+        Mod = mod;
+        _ = LoadIconAsync();
+    }
+
+    private async Task LoadIconAsync()
+    {
+        Icon = await ImageLoader.GetAsync(Mod.IconUrl);
+    }
 }
 
 public partial class InstalledModsViewModel : ObservableObject

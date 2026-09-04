@@ -1,92 +1,165 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using McModsAdder.Models;
+using MCModPlus.Models;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 /// <summary>
 /// 扫描与识别 Minecraft 实例（兼容 PCL / HMCL 版本隔离目录）。
 /// </summary>
 public class InstanceScanner
 {
-    private static readonly Regex McVersionRegex = new(@"1\.\d+(\.\d+)?", RegexOptions.Compiled);
+    // 1.21.1 为传统版本号；26.2 起为新版年份版本号。仅匹配这两种正式 MC 版本格式，避免将加载器版本误识别为游戏版本。
+    private static readonly Regex McVersionRegex = new(@"(?<!\d)(?:1\.\d+(?:\.\d+)?|\d{2}\.\d+)(?!\d)", RegexOptions.Compiled);
 
     /// <summary>
-    /// 扫描给定根路径，返回发现的实例列表。
-    /// 根路径可以是 .minecraft 目录（含 versions 子目录）、versions 目录本身、或单个实例目录。
+    /// 扫描所有已知启动器目录。扫描范围限定为启动器常用目录和用户配置目录，避免遍历整个磁盘造成卡顿及误识别。
+    /// </summary>
+    public List<GameInstance> ScanAll(IEnumerable<string>? customRoots = null)
+    {
+        var roots = GetDefaultScanRoots();
+        if (customRoots != null)
+        {
+            roots.AddRange(customRoots);
+        }
+
+        var found = new Dictionary<string, GameInstance>(StringComparer.OrdinalIgnoreCase);
+        foreach (var root in roots.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            foreach (var instance in Scan(root))
+            {
+                var key = NormalizePath(instance.DirectoryPath);
+                found[key] = instance;
+            }
+        }
+
+        return found.Values
+            .OrderByDescending(i => i.IsModded)
+            .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>返回官方、HMCL、PCL、MultiMC/Prism、BakaXL 等启动器的常见实例根目录。</summary>
+    public static List<string> GetDefaultScanRoots()
+    {
+        var roots = new List<string>();
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        AddExisting(roots, Path.Combine(appData, ".minecraft"));
+        AddExisting(roots, Path.Combine(appData, "Microsoft Launcher", "minecraft"));
+        AddExisting(roots, Path.Combine(appData, "hmcl"));
+        AddExisting(roots, Path.Combine(appData, "HMCL"));
+        AddExisting(roots, Path.Combine(appData, "PCL"));
+        AddExisting(roots, Path.Combine(appData, "PCL2"));
+        AddExisting(roots, Path.Combine(appData, "BakaXL"));
+        AddExisting(roots, Path.Combine(appData, "MultiMC", "instances"));
+        AddExisting(roots, Path.Combine(appData, "PrismLauncher", "instances"));
+        AddExisting(roots, Path.Combine(localAppData, "Packages", "Microsoft.4297127D64EC6_8wekyb3d8bbwe", "LocalCache", "Roaming", ".minecraft"));
+        AddExisting(roots, Path.Combine(userProfile, ".minecraft"));
+        AddExisting(roots, Path.Combine(documents, "Minecraft", "instances"));
+        AddExisting(roots, Path.Combine(documents, "MultiMC", "instances"));
+        AddExisting(roots, Path.Combine(documents, "PrismLauncher", "instances"));
+
+        return roots;
+    }
+
+    private static void AddExisting(ICollection<string> roots, string path)
+    {
+        if (Directory.Exists(path))
+        {
+            roots.Add(path);
+        }
+    }
+
+    private static string NormalizePath(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        catch
+        {
+            return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+    }
+
+    /// <summary>
+    /// 扫描给定根路径，支持 .minecraft、versions、instances、单实例目录及其一层嵌套结构。
     /// </summary>
     public List<GameInstance> Scan(string rootPath)
     {
-        var result = new List<GameInstance>();
+        var result = new Dictionary<string, GameInstance>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath))
         {
-            return result;
+            return new();
         }
 
-        var versionsDir = Path.Combine(rootPath, "versions");
-        if (Directory.Exists(versionsDir))
+        var root = NormalizePath(rootPath);
+        AddParsed(result, root);
+        ScanKnownChild(root, "versions", result);
+        ScanKnownChild(root, "instances", result);
+        ScanKnownChild(Path.Combine(root, ".minecraft"), "versions", result);
+        ScanKnownChild(Path.Combine(root, ".minecraft"), "instances", result);
+
+        var rootName = Path.GetFileName(root);
+        if (rootName.Equals("versions", StringComparison.OrdinalIgnoreCase)
+            || rootName.Equals("instances", StringComparison.OrdinalIgnoreCase))
         {
-            ScanVersionsDir(versionsDir, result);
-        }
-        else
-        {
-            // 常见整合包分发结构：用户选择的是整合包根目录，实际内容位于 .minecraft。
-            var nestedMinecraft = Path.Combine(rootPath, ".minecraft");
-            var nestedVersions = Path.Combine(nestedMinecraft, "versions");
-            if (Directory.Exists(nestedVersions))
-            {
-                ScanVersionsDir(nestedVersions, result);
-            }
-            else if (Path.GetFileName(rootPath.TrimEnd(Path.DirectorySeparatorChar))
-                         .Equals("versions", StringComparison.OrdinalIgnoreCase))
-            {
-                ScanVersionsDir(rootPath, result);
-            }
-            else
-            {
-                // 也许用户直接选了实例目录本身
-                var single = ParseInstanceDir(rootPath);
-                if (single != null)
-                {
-                    result.Add(single);
-                }
-                else
-                {
-                    // 再兜底：根目录下直接散落若干实例目录（某些整合包结构）
-                    foreach (var dir in Directory.GetDirectories(rootPath))
-                    {
-                        var inst = ParseInstanceDir(dir);
-                        if (inst != null)
-                        {
-                            result.Add(inst);
-                        }
-                    }
-                }
-            }
+            ScanDirectories(root, result);
         }
 
-        return result.OrderByDescending(i => i.IsModded).ThenBy(i => i.Name).ToList();
+        return result.Values
+            .OrderByDescending(i => i.IsModded)
+            .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
-    /// <summary>返回默认的 .minecraft 目录（存在时）</summary>
+    private void ScanKnownChild(string parent, string childName, IDictionary<string, GameInstance> result)
+    {
+        var child = Path.Combine(parent, childName);
+        if (Directory.Exists(child))
+        {
+            ScanDirectories(child, result);
+        }
+    }
+
+    private void ScanDirectories(string path, IDictionary<string, GameInstance> result)
+    {
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(path))
+            {
+                AddParsed(result, dir);
+                var nestedMinecraft = Path.Combine(dir, ".minecraft");
+                if (Directory.Exists(nestedMinecraft))
+                {
+                    AddParsed(result, nestedMinecraft);
+                    ScanKnownChild(nestedMinecraft, "versions", result);
+                }
+            }
+        }
+        catch (UnauthorizedAccessException) { }
+        catch (IOException) { }
+    }
+
+    private void AddParsed(IDictionary<string, GameInstance> result, string path)
+    {
+        var instance = ParseInstanceDir(path);
+        if (instance != null)
+        {
+            result[NormalizePath(instance.DirectoryPath)] = instance;
+        }
+    }
+
+    /// <summary>返回默认的 .minecraft 目录（存在时）。</summary>
     public static string? GetDefaultMinecraftDir()
     {
-        var path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
-        return Directory.Exists(path) ? path : null;
-    }
-
-    private void ScanVersionsDir(string versionsDir, List<GameInstance> result)
-    {
-        foreach (var dir in Directory.GetDirectories(versionsDir))
-        {
-            var inst = ParseInstanceDir(dir);
-            if (inst != null)
-            {
-                result.Add(inst);
-            }
-        }
+        return GetDefaultScanRoots().FirstOrDefault(p =>
+            Path.GetFileName(p).Equals(".minecraft", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -94,7 +167,23 @@ public class InstanceScanner
     /// </summary>
     public GameInstance? ParseInstanceDir(string dir)
     {
-        var name = Path.GetFileName(dir.TrimEnd(Path.DirectorySeparatorChar));
+        try
+        {
+            return ParseInstanceDirCore(dir);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
+
+    private GameInstance? ParseInstanceDirCore(string dir)
+    {
+        var name = Path.GetFileName(dir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         if (string.IsNullOrEmpty(name))
         {
             return null;

@@ -1,0 +1,176 @@
+<Page x:Class="MCModPlus.Views.LocalModLibraryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="本地 Mod 库"
+      PreviewMouseDown="OnPagePreviewMouseDown">
+    <Grid Margin="32,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="本地 Mod 库" Style="{StaticResource PageTitle}" />
+        <TextBlock Grid.Row="0" Text="添加本地mod文件，可随配置表添加进游戏"
+                   Style="{StaticResource PageSubtitle}" Margin="0,36,0,0" />
+        <StackPanel Grid.Row="1" Margin="0,18,0,0">
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Content="添加 mod" Command="{Binding AddCommand}" Style="{StaticResource GreenButton}" Margin="0,0,10,8">
+                    <ui:Button.Icon><ui:SymbolIcon Symbol="Add24" /></ui:Button.Icon>
+                </ui:Button>
+                <TextBlock Text="{Binding ModCount, StringFormat='共{0}个mod'}" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextTertiary}" FontSize="12" Margin="0,0,16,8" />
+                <TextBlock Text="{Binding MessageText}" VerticalAlignment="Center" Margin="6,0,16,8"
+                           Foreground="{StaticResource TextTertiary}" FontSize="12" />
+            </StackPanel>
+            <Grid x:Name="FilterAndSortBar" Margin="0,0,12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="0" />
+                    <ColumnDefinition Width="210" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" MaxWidth="590" HorizontalAlignment="Left" Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                        BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,10,4">
+                    <WrapPanel VerticalAlignment="Center">
+                        <TextBlock Text="筛选" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"
+                                   FontWeight="SemiBold" Margin="0,0,10,0" />
+                        <ui:TextBox Width="178" Height="34" PlaceholderText="搜索 Mod 名称或文件名"
+                                    Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0" />
+                        <ComboBox Width="120" Height="34" ItemsSource="{Binding LoaderFilterOptions}"
+                                  SelectedItem="{Binding SelectedLoader}" Margin="0,0,8,0" />
+                        <ComboBox Width="130" Height="34" ItemsSource="{Binding GameVersionOptions}"
+                                  SelectedItem="{Binding SelectedGameVersion}" />
+                    </WrapPanel>
+                </Border>
+                <Border Grid.Column="1" Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                        BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="排序" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"
+                                   FontWeight="SemiBold" Margin="0,0,10,0" />
+                        <ComboBox Width="150" Height="34" ItemsSource="{Binding SortModes}"
+                                  SelectedItem="{Binding SortMode}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+            <Border HorizontalAlignment="Left" Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                    BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button Content="批量修改加载器" Command="{Binding BatchSetLoaderCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0" />
+                    <ui:Button Content="批量改 MC 版本" Command="{Binding BatchEditGameVersionCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0" />
+                    <ui:Button x:Name="BatchDeleteButton" Tag="BatchDeleteAction" Width="96" Content="批量删除" Command="{Binding BatchDeleteCommand}" IsEnabled="{Binding HasSelection}" Visibility="{Binding IsBatchDeletePending, Converter={StaticResource InverseBoolToVisibility}}" Margin="0,0,12,0" />
+                    <ui:Button x:Name="BatchDeleteConfirmButton" Tag="BatchDeleteAction" Width="96" Content="确认" Appearance="Danger" Foreground="White"
+                               Command="{Binding BatchDeleteCommand}" Visibility="{Binding IsBatchDeletePending, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,12,0" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectionText}" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextTertiary}" FontSize="12" />
+                        <CheckBox Content="全选" IsChecked="{Binding IsAllSelected, Mode=TwoWay}"
+                                  MinWidth="0" Padding="0" HorizontalContentAlignment="Left"
+                                  VerticalAlignment="Center" HorizontalAlignment="Left" Margin="6,0,0,0"
+                                  Foreground="{StaticResource TextSecondary}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding ModsView}">
+                <ItemsControl.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.ContainerStyle>
+                            <Style TargetType="GroupItem">
+                                <Setter Property="Width" Value="{Binding RelativeSource={RelativeSource AncestorType=ItemsControl}, Path=ActualWidth}" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </GroupStyle.ContainerStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <Border HorizontalAlignment="Stretch" Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
+                                        BorderThickness="0,0,0,1" CornerRadius="10" Padding="4,10" Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="{StaticResource AccentGreenDeep}" CornerRadius="5" Padding="8,2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name, Converter={StaticResource GroupHeaderText}}" Foreground="White"
+                                                       FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="  Mod" Foreground="{StaticResource TextTertiary}"
+                                                   VerticalAlignment="Center" Margin="4,0,0,0" />
+                                        <TextBlock Text="  （" Foreground="{StaticResource TextTertiary}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ItemCount}" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
+                                        <TextBlock Text=" 个）" Foreground="{StaticResource TextTertiary}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                        <GroupStyle.Panel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </GroupStyle.Panel>
+                    </GroupStyle>
+                </ItemsControl.GroupStyle>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="16,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="32" />
+                                    <ColumnDefinition Width="56" />
+                                    <ColumnDefinition Width="*" MinWidth="180" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                <Border Grid.Column="1" Width="44" Height="44" CornerRadius="6" Background="{StaticResource BadgeBg}" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <Grid>
+                                        <ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="22" Foreground="{StaticResource AccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image Source="{Binding ThumbnailPath}" Width="44" Height="44" Stretch="UniformToFill" />
+                                    </Grid>
+                                </Border>
+                                <StackPanel Grid.Column="2">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                                        <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{StaticResource TextTertiary}" Margin="0,5,0,8" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource Badge}"><TextBlock Text="{Binding Version}" Style="{StaticResource BadgeText}" Foreground="{StaticResource InfoBrush}" /></Border>
+                                            <Border Style="{StaticResource Badge}" Margin="8,0,0,0"
+                                                    Background="{Binding Loader, Converter={StaticResource LoaderToBackgroundBrush}}">
+                                                <TextBlock Text="{Binding Loader, Converter={StaticResource LoaderToText}}"
+                                                           Style="{StaticResource BadgeText}"
+                                                           Foreground="{Binding Loader, Converter={StaticResource LoaderToBrush}}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}" Margin="8,0,0,0" Background="#332F78D0">
+                                                <TextBlock Text="{Binding GameVersion}" Style="{StaticResource BadgeText}"
+                                                           Foreground="{StaticResource InfoBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:Button Content="重命名" Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="0,0,8,0" />
+                                    <ComboBox Width="112" Height="32" ItemsSource="{Binding DataContext.LoaderOptions, RelativeSource={RelativeSource AncestorType=Page}}"
+                                              SelectedItem="{Binding Loader}" SelectionChanged="LoaderComboBox_SelectionChanged" Margin="0,0,8,0">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource LoaderToText}}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <ui:Button Content="改 MC 版本" Command="{Binding DataContext.EditGameVersionCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="0,0,8,0" />
+                                    <ui:Button Tag="DeleteAction" Width="72" Height="32" Content="删除" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
+                                               Visibility="{Binding IsDeletePending, Converter={StaticResource InverseBoolToVisibility}}" />
+                                    <ui:Button Tag="DeleteAction" Width="72" Height="32" Content="确认" Appearance="Danger" Foreground="White"
+                                               Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
+                                               Visibility="{Binding IsDeletePending, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Grid.Row="3" Text="支持 .jar 文件；添加后会复制到应用数据目录的 local-mods/files 中。"
+                   Foreground="{StaticResource TextTertiary}" FontSize="12" Margin="0,10,0,0" />
+    </Grid>
+</Page>

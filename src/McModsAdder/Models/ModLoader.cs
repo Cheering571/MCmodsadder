@@ -1,4 +1,4 @@
-namespace McModsAdder.Models;
+namespace MCModPlus.Models;
 
 public enum ModLoader
 {

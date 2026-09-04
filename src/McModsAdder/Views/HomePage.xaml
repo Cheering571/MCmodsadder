@@ -1,0 +1,296 @@
+<Page x:Class="MCModPlus.Views.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="主页"
+      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <Page.Resources>
+        <SolidColorBrush x:Key="WorldBg" Color="#FF1F2328" />
+        <SolidColorBrush x:Key="Stone" Color="#FF3B4148" />
+        <SolidColorBrush x:Key="StoneDark" Color="#FF252A30" />
+        <SolidColorBrush x:Key="Wood" Color="#FF6B472F" />
+        <SolidColorBrush x:Key="WoodDark" Color="#FF3E2A20" />
+        <SolidColorBrush x:Key="Dirt" Color="#FF60412F" />
+        <SolidColorBrush x:Key="Grass" Color="#FF4D8A45" />
+        <SolidColorBrush x:Key="PixelGreen" Color="#FF75C457" />
+        <SolidColorBrush x:Key="PixelGold" Color="#FFF0C45C" />
+        <SolidColorBrush x:Key="PixelBlue" Color="#FF63B7D4" />
+        <SolidColorBrush x:Key="PixelPurple" Color="#FFB58ADE" />
+        <SolidColorBrush x:Key="PixelText" Color="#FFF5F1E8" />
+        <SolidColorBrush x:Key="PixelMuted" Color="#FFC6C6BE" />
+        <DropShadowEffect x:Key="PixelShadow" BlurRadius="0" ShadowDepth="5" Direction="315" Color="#FF08090B" Opacity="0.9" />
+        <DrawingBrush x:Key="WoodPlanks" TileMode="Tile" Viewport="0,0,96,48" ViewportUnits="Absolute" Stretch="None">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FF5C3D29" Geometry="M0,0 H96 V48 H0 Z" />
+                    <GeometryDrawing Brush="#FF775039" Geometry="M0,2 H96 V5 H0 Z M0,24 H96 V27 H0 Z" />
+                    <GeometryDrawing Brush="#FF3E291F" Geometry="M0,20 H96 V23 H0 Z M0,43 H96 V46 H0 Z M31,0 H35 V22 H31 Z M70,25 H74 V48 H70 Z" />
+                    <GeometryDrawing Brush="#FF946443" Geometry="M8,10 H22 V12 H8 Z M44,33 H62 V35 H44 Z M78,12 H91 V14 H78 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <DrawingBrush x:Key="GrassDirt" TileMode="Tile" Viewport="0,0,80,80" ViewportUnits="Absolute" Stretch="None">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FF5B402E" Geometry="M0,0 H80 V80 H0 Z" />
+                    <GeometryDrawing Brush="#FF4A823F" Geometry="M0,0 H80 V18 H0 Z" />
+                    <GeometryDrawing Brush="#FF72AD4D" Geometry="M5,4 H17 V7 H5 Z M43,10 H58 V13 H43 Z" />
+                    <GeometryDrawing Brush="#FF76503A" Geometry="M10,30 H16 V36 H10 Z M51,47 H59 V54 H51 Z M27,65 H34 V72 H27 Z" />
+                    <GeometryDrawing Brush="#FF3D2C25" Geometry="M0,19 H80 V23 H0 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <DrawingBrush x:Key="StoneBricks" TileMode="Tile" Viewport="0,0,96,64" ViewportUnits="Absolute" Stretch="None">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FF384047" Geometry="M0,0 H96 V64 H0 Z" />
+                    <GeometryDrawing Brush="#FF555E62" Geometry="M4,4 H43 V27 H4 Z M51,4 H91 V27 H51 Z M4,36 H27 V59 H4 Z M35,36 H75 V59 H35 Z M83,36 H92 V59 H83 Z" />
+                    <GeometryDrawing Brush="#FF252B31" Geometry="M0,28 H96 V35 H0 Z M44,0 H50 V28 H44 Z M28,35 H34 V64 H28 Z M76,35 H82 V64 H76 Z" />
+                    <GeometryDrawing Brush="#FF707878" Geometry="M8,7 H29 V10 H8 Z M57,7 H80 V10 H57 Z M39,39 H63 V42 H39 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <DrawingBrush x:Key="CaveBlocks" TileMode="Tile" Viewport="0,0,100,80" ViewportUnits="Absolute" Stretch="None">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FF1E3540" Geometry="M0,0 H100 V80 H0 Z" />
+                    <GeometryDrawing Brush="#FF28515B" Geometry="M4,5 H31 V30 H4 Z M64,5 H95 V25 H64 Z M38,43 H66 V74 H38 Z" />
+                    <GeometryDrawing Brush="#FF183038" Geometry="M0,34 H100 V41 H0 Z M32,0 H39 V34 H32 Z M67,41 H73 V80 H67 Z" />
+                    <GeometryDrawing Brush="#FF4A8C8E" Geometry="M11,10 H18 V17 H11 Z M76,12 H84 V20 H76 Z M47,52 H56 V61 H47 Z" />
+                    <GeometryDrawing Brush="#FF8558A7" Geometry="M21,51 H27 V58 H21 Z M85,57 H92 V65 H85 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <!-- 所有图标均使用 8px 整数网格构成，避免曲线与抗锯齿风格。 -->
+        <DrawingImage x:Key="PixelWorkbench"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF251912" Geometry="M6,6 H58 V58 H6 Z" />
+            <GeometryDrawing Brush="#FF9B6031" Geometry="M10,10 H54 V54 H10 Z" />
+            <GeometryDrawing Brush="#FF7A4A28" Geometry="M10,10 H54 V20 H10 Z" />
+            <GeometryDrawing Brush="#FFC08A4A" Geometry="M14,14 H28 V18 H14 Z M36,14 H50 V18 H36 Z" />
+            <GeometryDrawing Brush="#FFD4964C" Geometry="M16,26 H26 V36 H16 Z M28,26 H38 V36 H28 Z M16,40 H26 V50 H16 Z M28,40 H38 V50 H28 Z" />
+            <GeometryDrawing Brush="#FF60351F" Geometry="M42,24 H50 V52 H42 Z" />
+            <GeometryDrawing Brush="#FF4A2C18" Geometry="M42,30 H50 V34 H42 Z M42,42 H50 V46 H42 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+        <DrawingImage x:Key="PixelInstance"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF1D2930" Geometry="M6,12 H54 V58 H6 Z" />
+            <GeometryDrawing Brush="#FF5A9C4B" Geometry="M10,16 H50 V28 H10 Z" />
+            <GeometryDrawing Brush="#FF8FD66C" Geometry="M14,18 H22 V22 H14 Z M34,20 H44 V24 H34 Z" />
+            <GeometryDrawing Brush="#FF8C5A38" Geometry="M10,28 H50 V54 H10 Z" />
+            <GeometryDrawing Brush="#FF6B4226" Geometry="M16,34 H22 V40 H16 Z M34,32 H42 V36 H34 Z M26,44 H32 V50 H26 Z" />
+            <GeometryDrawing Brush="#FF5A3620" Geometry="M10,50 H50 V54 H10 Z" />
+            <GeometryDrawing Brush="#FF1D2930" Geometry="M40,2 H60 V22 H40 Z" />
+            <GeometryDrawing Brush="#FF3E5A34" Geometry="M44,6 H56 V18 H44 Z" />
+            <GeometryDrawing Brush="#FFB8D66C" Geometry="M48,8 H52 V16 H48 Z M46,10 H54 V14 H46 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+        <DrawingImage x:Key="PixelProfileBook"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF291719" Geometry="M10,6 H54 V58 H10 Z" />
+            <GeometryDrawing Brush="#FF8A3E32" Geometry="M14,10 H50 V54 H14 Z" />
+            <GeometryDrawing Brush="#FF713126" Geometry="M14,10 H20 V54 H14 Z" />
+            <GeometryDrawing Brush="#FFF0D6A1" Geometry="M46,14 H50 V50 H46 Z" />
+            <GeometryDrawing Brush="#FFF0C45C" Geometry="M36,10 H44 V40 H40 V44 H36 Z" />
+            <GeometryDrawing Brush="#FFB67843" Geometry="M24,18 H34 V22 H24 Z M24,26 H32 V30 H24 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+        <DrawingImage x:Key="PixelCompass"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF1B252B" Geometry="M16,4 H40 V8 H48 V16 H52 V40 H48 V48 H40 V52 H16 V48 H8 V40 H4 V16 H8 V8 H16 Z" />
+            <GeometryDrawing Brush="#FF5C9FA5" Geometry="M16,8 H40 V12 H44 V16 H48 V40 H44 V44 H40 V48 H16 V44 H12 V40 H8 V16 H12 V12 H16 Z" />
+            <GeometryDrawing Brush="#FFBFE8F2" Geometry="M20,16 H36 V20 H40 V36 H36 V40 H20 V36 H16 V20 H20 Z" />
+            <GeometryDrawing Brush="#FFF2FBFF" Geometry="M20,16 H28 V20 H24 V24 H20 Z" />
+            <GeometryDrawing Brush="#FF2E7EA8" Geometry="M27,20 H32 V35 H27 Z M22,25 H37 V30 H22 Z" />
+            <GeometryDrawing Brush="#FF1B252B" Geometry="M44,44 H52 V52 H44 Z M48,48 H56 V56 H48 Z M52,52 H60 V60 H52 Z" />
+            <GeometryDrawing Brush="#FF293942" Geometry="M46,46 H50 V50 H46 Z M50,50 H54 V54 H50 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+        <DrawingImage x:Key="PixelChest"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF251915" Geometry="M8,6 H56 V22 H8 Z" />
+            <GeometryDrawing Brush="#FF9B5F30" Geometry="M12,10 H52 V18 H12 Z" />
+            <GeometryDrawing Brush="#FFC17B3B" Geometry="M16,12 H30 V16 H16 Z" />
+            <GeometryDrawing Brush="#FF1A120C" Geometry="M6,22 H58 V30 H6 Z" />
+            <GeometryDrawing Brush="#FFE2B65A" Geometry="M18,20 H28 V30 H18 Z" />
+            <GeometryDrawing Brush="#FFB58ADE" Geometry="M38,18 H48 V30 H38 Z" />
+            <GeometryDrawing Brush="#FFE3C8F2" Geometry="M40,20 H44 V24 H40 Z" />
+            <GeometryDrawing Brush="#FF251915" Geometry="M4,30 H60 V58 H4 Z" />
+            <GeometryDrawing Brush="#FF9B5F30" Geometry="M8,34 H56 V54 H8 Z" />
+            <GeometryDrawing Brush="#FFC17B3B" Geometry="M12,36 H26 V40 H12 Z" />
+            <GeometryDrawing Brush="#FF71401F" Geometry="M8,44 H56 V48 H8 Z" />
+            <GeometryDrawing Brush="#FF5A3A22" Geometry="M8,50 H56 V54 H8 Z" />
+            <GeometryDrawing Brush="#FFE2B65A" Geometry="M28,30 H36 V42 H28 Z" />
+            <GeometryDrawing Brush="#FF40291C" Geometry="M30,36 H34 V40 H30 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+        <DrawingImage x:Key="PixelTorch"><DrawingImage.Drawing><DrawingGroup>
+            <GeometryDrawing Brush="#FF241B16" Geometry="M28,2 H36 V6 H28 Z M24,6 H40 V12 H24 Z M20,12 H44 V54 H20 Z M22,54 H42 V58 H22 Z" />
+            <GeometryDrawing Brush="#FF5A4632" Geometry="M27,8 H37 V10 H27 Z M26,54 H38 V56 H26 Z" />
+            <GeometryDrawing Brush="#FFFFD66B" Geometry="M24,16 H40 V46 H24 Z" />
+            <GeometryDrawing Brush="#FFFFF0B8" Geometry="M26,18 H31 V30 H26 Z" />
+            <GeometryDrawing Brush="#FFFFF3C8" Geometry="M29,26 H35 V40 H29 Z" />
+            <GeometryDrawing Brush="#FF241B16" Geometry="M20,30 H44 V34 H44 Z" />
+        </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+
+        <Style x:Key="PixelButton" TargetType="Button">
+            <Setter Property="Background" Value="#DD252B31" />
+            <Setter Property="BorderBrush" Value="#FF59636A" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Foreground" Value="{StaticResource PixelText}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Effect" Value="{StaticResource PixelShadow}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Panel" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Panel" Property="BorderBrush" Value="#FFB9D889" />
+                                <Setter TargetName="Panel" Property="Background" Value="#EE30383D" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Panel" Property="BorderBrush" Value="#FFF0C45C" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Panel" Property="Opacity" Value="0.48" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Panel" Property="RenderTransform">
+                                    <Setter.Value><TranslateTransform Y="2" /></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PixelSuggestionPanel" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource WoodPlanks}" />
+            <Setter Property="BorderBrush" Value="#FF729B61" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Cursor" Value="Arrow" />
+            <Setter Property="Effect" Value="{StaticResource PixelShadow}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#EE30383D" />
+                    <Setter Property="BorderBrush" Value="#FFB9D889" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="PixelTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PixelText}" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="21" />
+        </Style>
+        <Style x:Key="PixelBody" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource PixelMuted}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="PixelCaption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#FF9FA79E" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="26,20,26,22" Background="{StaticResource WorldBg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="148" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="78" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.RowSpan="3" Background="{StaticResource WorldBg}" BorderBrush="#FF343B43" BorderThickness="1">
+            <Canvas IsHitTestVisible="False" Opacity="0.42">
+                <Rectangle Width="420" Height="2" Fill="#FF4B5A51" Canvas.Left="28" Canvas.Top="54" />
+                <Rectangle Width="270" Height="2" Fill="#FF4B5A51" Canvas.Left="620" Canvas.Top="130" />
+                <Rectangle Width="2" Height="180" Fill="#FF3B463F" Canvas.Left="170" Canvas.Top="150" />
+                <Rectangle Width="2" Height="250" Fill="#FF3B463F" Canvas.Left="780" Canvas.Top="190" />
+            </Canvas>
+        </Border>
+
+        <Border Grid.Row="0" Margin="0,0,0,16" Background="{StaticResource WoodPlanks}" BorderBrush="#FF96704B" BorderThickness="3" Effect="{StaticResource PixelShadow}">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                <Rectangle Fill="#8C1A1110" />
+                <Grid Background="{StaticResource WoodDark}">
+                    <Border Width="58" Height="58" Background="{StaticResource Wood}" BorderBrush="#FFB38354" BorderThickness="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="{StaticResource PixelWorkbench}" Width="42" Height="42" Stretch="Uniform" />
+                    </Border>
+                </Grid>
+                <Grid Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="24,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="MCMod++" FontSize="30" FontWeight="Bold" Foreground="{StaticResource PixelText}" />
+                        <TextBlock Text="为Minecraft实例轻松添加属于你的模组清单" Style="{StaticResource PixelBody}" Margin="0,5,0,0" />
+                    </StackPanel>
+                </Grid>
+                <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="8,8,12,8">
+                    <Border Background="#CC4D8A45" BorderBrush="#FF9AD36A" BorderThickness="2" Padding="9,3" Margin="0,1">
+                        <TextBlock Foreground="{StaticResource PixelText}" FontSize="11" FontWeight="Bold" TextAlignment="Center"><Run Text="实例 " /><Run Text="{Binding InstanceCount}" /></TextBlock>
+                    </Border>
+                    <Border Background="#CC9B6A35" BorderBrush="#FFF0C45C" BorderThickness="2" Padding="9,3" Margin="0,1">
+                        <TextBlock Foreground="{StaticResource PixelText}" FontSize="11" FontWeight="Bold" TextAlignment="Center"><Run Text="配置表 " /><Run Text="{Binding ProfileCount}" /></TextBlock>
+                    </Border>
+                    <Border Background="#CC4A6F8A" BorderBrush="#FF78C8E5" BorderThickness="2" Padding="9,3" Margin="0,1">
+                        <TextBlock Foreground="{StaticResource PixelText}" FontSize="11" FontWeight="Bold" TextAlignment="Center"><Run Text="本地 Mod " /><Run Text="{Binding ModCount}" /></TextBlock>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <UniformGrid Grid.Row="1" Rows="2" Columns="2" Margin="0,0,0,16">
+            <Button Style="{StaticResource PixelButton}" Command="{Binding OpenInstancesCommand}" Margin="0,0,8,8" Background="{StaticResource GrassDirt}"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Grid Margin="18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <Border Width="54" Height="54" Background="{StaticResource Grass}" BorderBrush="#FFA4D36B" BorderThickness="3" VerticalAlignment="Top">
+                        <Image Source="{StaticResource PixelInstance}" Width="42" Height="42" Stretch="Uniform" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="16,2,0,0">
+                            <TextBlock Text="管理实例" Style="{StaticResource PixelTitle}" /><TextBlock Text="集中查看和整理你的 Minecraft 游戏实例。" Style="{StaticResource PixelBody}" Margin="0,8,0,0" /><TextBlock Text="进入实例管理  ›" Foreground="{StaticResource PixelGreen}" FontWeight="Bold" Margin="0,10,0,0" />
+                        </StackPanel>
+                </Grid>
+            </Button>
+            <Button Style="{StaticResource PixelButton}" Command="{Binding OpenProfilesCommand}" Margin="8,0,0,8" Background="{StaticResource WoodPlanks}"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Grid Margin="18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <Border Width="54" Height="54" Background="{StaticResource Wood}" BorderBrush="#FFE0A66A" BorderThickness="3" VerticalAlignment="Top"><Image Source="{StaticResource PixelProfileBook}" Width="42" Height="42" Stretch="Uniform" /></Border>
+                    <StackPanel Grid.Column="1" Margin="16,2,0,0">
+                            <TextBlock Text="管理配置表" Style="{StaticResource PixelTitle}" /><TextBlock Text="统一维护你的专属模组清单。" Style="{StaticResource PixelBody}" Margin="0,8,0,0" /><TextBlock Text="打开配置表  ›" Foreground="{StaticResource PixelGold}" FontWeight="Bold" Margin="0,10,0,0" />
+                        </StackPanel>
+                </Grid>
+            </Button>
+            <Button Style="{StaticResource PixelButton}" Command="{Binding OpenProfilesCommand}" Margin="0,8,8,0" Background="{StaticResource CaveBlocks}"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Grid Margin="18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <Border Width="54" Height="54" Background="#FF234756" BorderBrush="#FF74D5E3" BorderThickness="3" VerticalAlignment="Top"><Image Source="{StaticResource PixelCompass}" Width="42" Height="42" Stretch="Uniform" /></Border>
+                    <StackPanel Grid.Column="1" Margin="16,2,0,0">
+                            <TextBlock Text="搜索添加 Mod" Style="{StaticResource PixelTitle}" /><TextBlock Text="探索模组平台，选择你心仪的模组。" Style="{StaticResource PixelBody}" Margin="0,8,0,0" /><TextBlock Text="前往配置表搜索  ›" Foreground="{StaticResource PixelBlue}" FontWeight="Bold" Margin="0,10,0,0" />
+                        </StackPanel>
+                </Grid>
+            </Button>
+            <Button Style="{StaticResource PixelButton}" Command="{Binding OpenLibraryCommand}" Margin="8,8,0,0" Background="{StaticResource StoneBricks}"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Grid Margin="18">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="74" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <Border Width="54" Height="54" Background="#FF53412A" BorderBrush="#FFE4B65A" BorderThickness="3" VerticalAlignment="Top"><Image Source="{StaticResource PixelChest}" Width="42" Height="42" Stretch="Uniform" /></Border>
+                    <StackPanel Grid.Column="1" Margin="16,2,0,0">
+                            <TextBlock Text="本地 Mod 库" Style="{StaticResource PixelTitle}" /><TextBlock Text="收藏并整理电脑中已有的 Mod 资源。" Style="{StaticResource PixelBody}" Margin="0,8,0,0" /><TextBlock Text="打开本地库  ›" Foreground="{StaticResource PixelGold}" FontWeight="Bold" Margin="0,10,0,0" />
+                        </StackPanel>
+                </Grid>
+            </Button>
+        </UniformGrid>
+
+        <Border Grid.Row="2" Style="{StaticResource PixelSuggestionPanel}">
+            <Grid Margin="18,10">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="54" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Border Width="40" Height="40" Background="#994D8A45" BorderBrush="#FF9AD36A" BorderThickness="2" VerticalAlignment="Center">
+                    <Image Source="{StaticResource PixelTorch}" Width="30" Height="30" Stretch="Uniform" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="使用建议" Foreground="{StaticResource PixelGreen}" FontSize="16" FontWeight="Bold" /><TextBlock Text="{Binding SuggestionText}" Style="{StaticResource PixelBody}" Margin="0,3,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

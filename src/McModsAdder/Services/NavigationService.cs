@@ -1,10 +1,15 @@
 using Wpf.Ui.Controls;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 public interface INavigatedTo
 {
     void OnNavigatedTo();
+}
+
+public interface INavigatedFrom
+{
+    void OnNavigatedFrom();
 }
 
 /// <summary>

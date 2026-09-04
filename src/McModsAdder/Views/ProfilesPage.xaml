@@ -1,7 +1,8 @@
-<Page x:Class="McModsAdder.Views.ProfilesPage"
+<Page x:Class="MCModPlus.Views.ProfilesPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      PreviewMouseDown="OnPagePreviewMouseDown"
       Title="配置表">
     <Grid Margin="32,24">
         <Grid.RowDefinitions>
@@ -13,7 +14,7 @@
 
         <StackPanel>
             <TextBlock Text="配置表" Style="{StaticResource PageTitle}" />
-            <TextBlock Text="配置表只记录 mod 项目（不含版本），同一张表可用于任意整合包"
+            <TextBlock Text="搜索并添加mod到配置表"
                        Style="{StaticResource PageSubtitle}" Margin="0,4,0,0" />
         </StackPanel>
 
@@ -25,6 +26,10 @@
             <ui:Button Content="导入配置表" Command="{Binding ImportCommand}">
                 <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowImport24" /></ui:Button.Icon>
             </ui:Button>
+            <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" FontSize="12"
+                       Foreground="{StaticResource TextTertiary}">
+                <Run Text="共" /><Run Text="{Binding Profiles.Count, Mode=OneWay}" /><Run Text="个配置表" />
+            </TextBlock>
         </StackPanel>
 
         <Grid Grid.Row="2">
@@ -56,15 +61,24 @@
                                         </ui:Button>
                                         <ui:Button Content="重命名" Margin="0,0,8,0"
                                                    Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                   CommandParameter="{Binding}" />
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon><ui:SymbolIcon Symbol="Rename24" /></ui:Button.Icon>
+                                        </ui:Button>
                                         <ui:Button Content="导出" Margin="0,0,8,0"
                                                    Command="{Binding DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                    CommandParameter="{Binding}">
-                                            <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowExport24" /></ui:Button.Icon>
+                                            <ui:Button.Icon><ui:SymbolIcon Symbol="Share24" /></ui:Button.Icon>
                                         </ui:Button>
-                                        <ui:Button Content="删除"
+                                        <ui:Button x:Name="DeleteButton" Tag="DeleteAction" Content="删除"
                                                    Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                   CommandParameter="{Binding}">
+                                                   CommandParameter="{Binding}"
+                                                   Visibility="{Binding IsDeletePending, Converter={StaticResource InverseBoolToVisibility}}">
+                                            <ui:Button.Icon><ui:SymbolIcon Symbol="Delete24" /></ui:Button.Icon>
+                                        </ui:Button>
+                                        <ui:Button x:Name="DeleteConfirmButton" Tag="DeleteAction" Content="确认" Appearance="Danger" Foreground="White"
+                                                   Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                   CommandParameter="{Binding}"
+                                                   Visibility="{Binding IsDeletePending, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <ui:Button.Icon><ui:SymbolIcon Symbol="Delete24" /></ui:Button.Icon>
                                         </ui:Button>
                                     </StackPanel>

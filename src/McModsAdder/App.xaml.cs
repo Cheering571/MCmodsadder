@@ -1,13 +1,13 @@
-﻿using System.Net.Http;
+using System.Net.Http;
 using System.Windows;
-using McModsAdder.Providers;
-using McModsAdder.Services;
-using McModsAdder.ViewModels;
-using McModsAdder.Views;
+using MCModPlus.Providers;
+using MCModPlus.Services;
+using MCModPlus.ViewModels;
+using MCModPlus.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Wpf.Ui.Appearance;
 
-namespace McModsAdder;
+namespace MCModPlus;
 
 public partial class App : Application
 {
@@ -16,7 +16,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        _singleInstanceMutex = new Mutex(true, "McModsAdder.SingleInstance", out var createdNew);
+        _singleInstanceMutex = new Mutex(true, "MCModPlus.SingleInstance", out var createdNew);
         if (!createdNew)
         {
             Shutdown();
@@ -59,10 +59,12 @@ public partial class App : Application
         services.AddSingleton<NavigationService>();
         services.AddSingleton<InstanceScanner>();
         services.AddSingleton<ProfileService>();
+        services.AddSingleton<LocalModLibraryService>();
 
-        // Mod 来源（二期可在此追加 CurseForgeProvider）
-        services.AddSingleton(new HttpClient());
-        services.AddSingleton<IModProvider, ModrinthProvider>();
+        // Mod 来源：合并 Modrinth 与 CurseForge（API Key 在设置页面配置）
+        services.AddSingleton<ModrinthProvider>(sp => new ModrinthProvider(new HttpClient(), sp.GetRequiredService<SettingsService>()));
+        services.AddSingleton<CurseForgeProvider>(sp => new CurseForgeProvider(new HttpClient(), sp.GetRequiredService<SettingsService>()));
+        services.AddSingleton<IModProvider, CombinedModProvider>();
 
         services.AddSingleton<ModJarAnalyzer>();
         services.AddSingleton<ModInstaller>();
@@ -72,14 +74,17 @@ public partial class App : Application
         services.AddTransient<InstanceDetailViewModel>();
         services.AddTransient<ProfilesViewModel>();
         services.AddTransient<ProfileEditorViewModel>();
-        services.AddTransient<ModDetailViewModel>();
+        services.AddTransient<LocalModLibraryViewModel>();
         services.AddTransient<InstallViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<HomeViewModel>();
 
         // Pages
+        services.AddTransient<HomePage>();
         services.AddTransient<InstancesPage>();
         services.AddTransient<InstanceDetailPage>();
         services.AddTransient<ProfilesPage>();
+        services.AddTransient<LocalModLibraryPage>();
         services.AddTransient<ProfileEditorPage>();
         services.AddTransient<InstallPage>();
         services.AddTransient<SettingsPage>();

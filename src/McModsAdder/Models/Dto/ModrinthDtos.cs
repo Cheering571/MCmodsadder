@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace McModsAdder.Models.Dto;
+namespace MCModPlus.Models.Dto;
 
 // ---------- 搜索 ----------
 

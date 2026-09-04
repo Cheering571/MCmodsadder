@@ -16,6 +16,14 @@ crash.log
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
+# Local workspaces and generated analysis artifacts
+.pclce-temp/
+backup/
+backups/
+build-check/
+rebuild-check/
+generated-images/
+
+# Release binaries and IDE agent metadata
+installer/*.exe
+.codebuddy/

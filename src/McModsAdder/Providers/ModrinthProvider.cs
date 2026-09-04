@@ -3,11 +3,11 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
-using McModsAdder.Models;
-using McModsAdder.Models.Dto;
-using McModsAdder.Services;
+using MCModPlus.Models;
+using MCModPlus.Models.Dto;
+using MCModPlus.Services;
 
-namespace McModsAdder.Providers;
+namespace MCModPlus.Providers;
 
 /// <summary>
 /// Modrinth API 实现。支持官方源与 MCIM 国内镜像切换。
@@ -31,7 +31,7 @@ public class ModrinthProvider : IModProvider
         _settings = settings;
         if (!_http.DefaultRequestHeaders.UserAgent.Any())
         {
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("McModsAdder/1.0 (github.com/mcmodsadder)");
+            _http.DefaultRequestHeaders.UserAgent.ParseAdd("MCModPlus/1.0 (github.com/MCModPlus)");
         }
         _http.Timeout = TimeSpan.FromSeconds(60);
     }
@@ -42,7 +42,7 @@ public class ModrinthProvider : IModProvider
 
     // ---------------- 搜索 ----------------
 
-    public async Task<ModSearchPage> SearchAsync(string query, int limit = 20, int offset = 0, CancellationToken ct = default)
+    public async Task<ModSearchPage> SearchAsync(string query, int limit = 20, int offset = 0, CancellationToken ct = default, ModSearchSource source = ModSearchSource.All)
     {
         var facets = Uri.EscapeDataString("[[\"project_type:mod\"]]");
         var url = $"{ApiBase}search?query={Uri.EscapeDataString(query)}&limit={limit}&offset={offset}&facets={facets}";
@@ -59,6 +59,7 @@ public class ModrinthProvider : IModProvider
                 Author = h.Author,
                 IconUrl = h.IconUrl ?? string.Empty,
                 Downloads = h.Downloads,
+                Source = "Modrinth",
                 SourceUrl = $"https://modrinth.com/mod/{Uri.EscapeDataString(h.Slug)}",
                 McModUrl = $"https://search.mcmod.cn/s?key={Uri.EscapeDataString(h.Title)}"
             }).ToList() ?? new List<ModSearchResult>()
@@ -190,6 +191,57 @@ public class ModrinthProvider : IModProvider
             foreach (var p in projects)
             {
                 result[p.Id] = p.Title;
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> GetProjectIconsAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default)
+    {
+        var result = new Dictionary<string, string>();
+        if (projectIds.Count == 0)
+        {
+            return result;
+        }
+
+        var ids = string.Join(",", projectIds.Distinct().Select(id => $"\"{id}\""));
+        var url = $"{ApiBase}projects?ids={Uri.EscapeDataString($"[{ids}]")}";
+        var projects = await GetWithRetryAsync<List<MrProject>>(url, ct);
+        if (projects != null)
+        {
+            foreach (var project in projects)
+            {
+                if (!string.IsNullOrWhiteSpace(project.IconUrl))
+                {
+                    result[project.Id] = project.IconUrl;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyDictionary<string, ModProjectInfo>> GetProjectInfosAsync(IReadOnlyCollection<string> projectIds, CancellationToken ct = default)
+    {
+        var result = new Dictionary<string, ModProjectInfo>();
+        if (projectIds.Count == 0)
+        {
+            return result;
+        }
+
+        var ids = string.Join(",", projectIds.Distinct().Select(id => $"\"{id}\""));
+        var url = $"{ApiBase}projects?ids={Uri.EscapeDataString($"[{ids}]")}";
+        var projects = await GetWithRetryAsync<List<MrProject>>(url, ct);
+        if (projects != null)
+        {
+            foreach (var project in projects)
+            {
+                result[project.Id] = new ModProjectInfo
+                {
+                    Name = project.Title,
+                    IconUrl = project.IconUrl ?? string.Empty
+                };
             }
         }
 

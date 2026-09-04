@@ -1,7 +1,7 @@
 using System.Windows;
 using Wpf.Ui.Controls;
 
-namespace McModsAdder.Views;
+namespace MCModPlus.Views;
 
 public partial class InputDialog : FluentWindow
 {

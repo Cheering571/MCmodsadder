@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using McModsAdder.Models;
-using McModsAdder.Services;
-using McModsAdder.Views;
+using MCModPlus.Models;
+using MCModPlus.Services;
+using MCModPlus.Views;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 public partial class InstanceDetailViewModel : ObservableObject
 {
@@ -107,7 +107,7 @@ public partial class InstanceDetailViewModel : ObservableObject
         ErrorText = string.Empty;
         try
         {
-            var progress = new Progress<int>(p => BusyText = $"正在识别已安装的 mod… {p}%");
+            var progress = new Progress<ModScanProgress>(p => BusyText = $"{p.Stage}… {p.Percentage}%");
             await _analyzer.AnalyzeAsync(Instance, progress);
             InstalledMods = new ObservableCollection<InstalledMod>(Instance.InstalledMods);
             HasRecognizedMods = true;
@@ -150,6 +150,7 @@ public partial class InstanceDetailViewModel : ObservableObject
         {
             var (rows, plan, unavailable) = await _installer.BuildPlanAsync(Instance, SelectedProfile);
             Rows = new ObservableCollection<ComparisonRow>(rows);
+            BusyText = "正在加载 Mod 缩略图…";
             _appState.LastComparison = rows;
             _appState.LastPlan = plan;
             _appState.LastUnavailable = unavailable;
@@ -160,11 +161,8 @@ public partial class InstanceDetailViewModel : ObservableObject
             HasCompared = true;
             CanInstall = plan.Count > 0;
 
-            // 后台加载条目图标
-            foreach (var row in rows)
-            {
-                _ = LoadRowIconAsync(row);
-            }
+            var iconTasks = rows.Select(LoadRowIconAsync).ToArray();
+            await Task.WhenAll(iconTasks);
         }
         catch (Exception ex)
         {

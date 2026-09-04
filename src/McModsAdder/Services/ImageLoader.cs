@@ -2,10 +2,8 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Windows.Media.Imaging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 /// <summary>
 /// mod 图标异步加载与内存缓存（失败返回 null，UI 显示占位图标）。
@@ -30,15 +28,10 @@ public static class ImageLoader
         {
             var bytes = await Http.GetByteArrayAsync(url, ct);
             using var source = new MemoryStream(bytes);
-            using var image = await Image.LoadAsync(source, ct);
-            using var png = new MemoryStream();
-            await image.SaveAsync(png, new PngEncoder(), ct);
-            png.Position = 0;
-
             var bmp = new BitmapImage();
             bmp.BeginInit();
             bmp.CacheOption = BitmapCacheOption.OnLoad;
-            bmp.StreamSource = png;
+            bmp.StreamSource = source;
             bmp.DecodePixelWidth = 96;
             bmp.EndInit();
             bmp.Freeze();

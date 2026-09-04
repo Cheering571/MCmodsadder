@@ -2,11 +2,11 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using McModsAdder.Models;
-using McModsAdder.Services;
-using McModsAdder.Views;
+using MCModPlus.Models;
+using MCModPlus.Services;
+using MCModPlus.Views;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 /// <summary>安装列表行（UI 实时更新用）</summary>
 public partial class InstallItemRow : ObservableObject

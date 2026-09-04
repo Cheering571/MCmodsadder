@@ -1,0 +1,95 @@
+<ui:FluentWindow x:Class="MCModPlus.Views.LocalModPickerWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="本地 Mod 库"
+                 Width="820" Height="620" MinWidth="640" MinHeight="460"
+                 WindowStartupLocation="CenterOwner"
+                 WindowBackdropType="Mica"
+                 ExtendsContentIntoTitleBar="True"
+                 FontFamily="Microsoft YaHei UI">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="/MCModPlus;component/Assets/AppIcon.png" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+        <Grid Grid.Row="1" Margin="32,20,32,28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel>
+                <TextBlock Text="本地 Mod 库" Style="{StaticResource PageTitle}" />
+                <TextBlock Text="{Binding CountText}" Margin="0,5,0,0" Foreground="{StaticResource TextTertiary}" FontSize="12" />
+            </StackPanel>
+            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,16,0,12" Padding="10,6">
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="筛选" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="0,0,10,0" />
+                    <ui:TextBox Width="240" Height="34" PlaceholderText="搜索 Mod 名称或文件名"
+                                Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0">
+                        <ui:TextBox.Icon><ui:SymbolIcon Symbol="Search24" /></ui:TextBox.Icon>
+                    </ui:TextBox>
+                    <ComboBox Width="120" Height="34" ItemsSource="{Binding LoaderFilterOptions}" SelectedItem="{Binding SelectedLoader}" Margin="0,0,8,0" />
+                    <ComboBox Width="130" Height="34" ItemsSource="{Binding GameVersionOptions}" SelectedItem="{Binding SelectedGameVersion}" Margin="0,0,8,0" />
+                    <TextBlock Text="排序" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="4,0,8,0" />
+                    <ComboBox Width="130" Height="34" ItemsSource="{Binding SortModes}" SelectedItem="{Binding SortMode}" />
+                </WrapPanel>
+            </Border>
+            <Border Grid.Row="2" Style="{StaticResource Card}" Padding="10">
+                <Grid>
+                    <TextBlock Text="没有匹配的本地 Mod" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextTertiary}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ModsView.IsEmpty}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ModsView}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12,9" Margin="0,1" CornerRadius="8" Background="{StaticResource BadgeBg}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="112" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="36" Height="36" CornerRadius="6" Background="{StaticResource CardBg}" VerticalAlignment="Center">
+                                                <Grid>
+                                                    <ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="20" Foreground="{StaticResource AccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    <Image Source="{Binding Mod.ThumbnailPath}" Width="36" Height="36" Stretch="UniformToFill" />
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0">
+                                                <TextBlock Text="{Binding Mod.Name}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding Mod.Version}" FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                                    <TextBlock Text=" · " FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                                    <TextBlock Text="{Binding Mod.Loader, Converter={StaticResource LoaderToText}}" FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                                    <TextBlock Text=" · MC " FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                                    <TextBlock Text="{Binding Mod.GameVersion}" FontSize="11" Foreground="{StaticResource TextTertiary}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="2" Content="{Binding IsAdded, Converter={StaticResource AddedToText}}" IsEnabled="{Binding IsAdded, Converter={StaticResource InverseBool}}"
+                                                       Command="{Binding DataContext.AddCommand, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}" CommandParameter="{Binding}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

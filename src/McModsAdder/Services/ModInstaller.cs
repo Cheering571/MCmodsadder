@@ -1,7 +1,7 @@
 using System.IO;
-using McModsAdder.Models;
+using MCModPlus.Models;
 
-namespace McModsAdder.Services;
+namespace MCModPlus.Services;
 
 public enum InstallItemKind
 {
@@ -23,6 +23,7 @@ public class InstallItem
     public string ProjectId { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public ModVersionInfo Version { get; set; } = new();
+    public string? LocalFilePath { get; set; }
     public InstallItemKind Kind { get; set; }
     public InstallItemStatus Status { get; set; } = InstallItemStatus.Pending;
     public string? Error { get; set; }
@@ -76,11 +77,13 @@ public class ModInstaller
 {
     private readonly IModProvider _provider;
     private readonly SettingsService _settings;
+    private readonly LocalModLibraryService _localLibrary;
 
-    public ModInstaller(IModProvider provider, SettingsService settings)
+    public ModInstaller(IModProvider provider, SettingsService settings, LocalModLibraryService localLibrary)
     {
         _provider = provider;
         _settings = settings;
+        _localLibrary = localLibrary;
     }
 
     /// <summary>
@@ -90,10 +93,11 @@ public class ModInstaller
     public async Task<(List<ComparisonRow> Rows, List<InstallItem> Plan, List<ProfileEntry> Unavailable)> BuildPlanAsync(
         GameInstance instance, ModProfile profile, CancellationToken ct = default)
     {
-        var installedProjectIds = instance.InstalledMods
-            .Where(m => m.ProjectId != null)
-            .Select(m => m.ProjectId!)
-            .ToHashSet();
+        var installedByProjectId = instance.InstalledMods
+            .Where(m => !string.IsNullOrWhiteSpace(m.ProjectId))
+            .GroupBy(m => m.ProjectId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        var installedProjectIds = installedByProjectId.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var rows = new List<ComparisonRow>();
         var plan = new List<InstallItem>();
@@ -104,7 +108,43 @@ public class ModInstaller
         foreach (var entry in profile.Entries)
         {
             ct.ThrowIfCancellationRequested();
-            var installed = instance.InstalledMods.FirstOrDefault(m => m.ProjectId == entry.ProjectId);
+            var installed = installedByProjectId.GetValueOrDefault(entry.ProjectId);
+            var libraryMod = string.IsNullOrWhiteSpace(entry.LocalModId) ? null : _localLibrary.GetById(entry.LocalModId);
+            if (libraryMod != null)
+            {
+                if (!IsCompatible(libraryMod, entry, instance))
+                {
+                    rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Unavailable });
+                    unavailable.Add(entry);
+                    continue;
+                }
+
+                var local = instance.InstalledMods.FirstOrDefault(m => string.Equals(m.FileName, libraryMod.FileName, StringComparison.OrdinalIgnoreCase));
+                if (local != null)
+                {
+                    rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Installed, Installed = local });
+                    continue;
+                }
+
+                rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Missing });
+                plan.Add(new InstallItem
+                {
+                    ProjectId = libraryMod.Id,
+                    ProjectName = entry.Name,
+                    LocalFilePath = _localLibrary.GetStoredPath(libraryMod),
+                    Version = new ModVersionInfo { FileName = libraryMod.FileName, VersionNumber = libraryMod.Version },
+                    Kind = InstallItemKind.Profile
+                });
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.LocalModId))
+            {
+                rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Unavailable });
+                unavailable.Add(entry);
+                continue;
+            }
+
             if (installed != null)
             {
                 rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Installed, Installed = installed });
@@ -178,6 +218,18 @@ public class ModInstaller
         return (rows, plan, unavailable);
     }
 
+    private static bool IsCompatible(LocalMod libraryMod, ProfileEntry entry, GameInstance instance)
+    {
+        var loader = libraryMod.Loader;
+        var gameVersion = libraryMod.GameVersion;
+
+        var loaderMatches = loader == ModLoader.Unknown || instance.Loader == ModLoader.Unknown || loader == instance.Loader;
+        var versionMatches = string.IsNullOrWhiteSpace(gameVersion) || gameVersion == "未知"
+            || string.IsNullOrWhiteSpace(instance.GameVersion)
+            || string.Equals(gameVersion, instance.GameVersion, StringComparison.OrdinalIgnoreCase);
+        return loaderMatches && versionMatches;
+    }
+
     /// <summary>
     /// 执行安装计划：并发下载 → sha1 校验 → 落盘 mods 目录。
     /// </summary>
@@ -220,7 +272,20 @@ public class ModInstaller
 
                 var destPath = Path.Combine(instance.ModsPath, item.Version.FileName);
                 var itemProgress = new Progress<double>(p => item.Progress = p);
-                await _provider.DownloadAsync(item.Version, destPath, itemProgress, ct);
+                if (!string.IsNullOrWhiteSpace(item.LocalFilePath))
+                {
+                    if (!File.Exists(item.LocalFilePath))
+                    {
+                        throw new FileNotFoundException("本地 Mod 托管文件不存在。", item.LocalFilePath);
+                    }
+
+                    File.Copy(item.LocalFilePath, destPath, overwrite: true);
+                    item.Progress = 1;
+                }
+                else
+                {
+                    await _provider.DownloadAsync(item.Version, destPath, itemProgress, ct);
+                }
 
                 item.Status = InstallItemStatus.Success;
                 lock (lockObj) { result.Succeeded.Add(item); }
@@ -288,7 +353,7 @@ public class ModInstaller
             }
 
             backupDir ??= Path.Combine(instance.ModsPath,
-                ".mcmodsadder-backup", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+                ".MCModPlus-backup", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
             Directory.CreateDirectory(backupDir);
             File.Move(existing, Path.Combine(backupDir, item.Version.FileName), overwrite: true);
         }

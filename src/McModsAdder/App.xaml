@@ -1,9 +1,9 @@
-﻿<Application x:Class="McModsAdder.App"
+<Application x:Class="MCModPlus.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:converters="clr-namespace:McModsAdder.Converters"
-             xmlns:helpers="clr-namespace:McModsAdder.Helpers">
+             xmlns:converters="clr-namespace:MCModPlus.Converters"
+             xmlns:helpers="clr-namespace:MCModPlus.Helpers">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -104,7 +104,9 @@
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
             <converters:LoaderToBrushConverter x:Key="LoaderToBrush" />
+            <converters:LoaderToBackgroundBrushConverter x:Key="LoaderToBackgroundBrush" />
             <converters:LoaderToTextConverter x:Key="LoaderToText" />
+            <converters:InstanceLoaderToTextConverter x:Key="InstanceLoaderToText" />
             <converters:GroupHeaderTextConverter x:Key="GroupHeaderText" />
             <converters:ComparisonStatusToBrushConverter x:Key="CompStatusToBrush" />
             <converters:ComparisonStatusToTextConverter x:Key="CompStatusToText" />
@@ -113,9 +115,7 @@
             <converters:InverseBoolConverter x:Key="InverseBool" />
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
             <converters:StringToVisibilityConverter x:Key="StringToVisibility" />
-            <converters:FriendlyNumberConverter x:Key="FriendlyNumber" />
             <converters:AddedToTextConverter x:Key="AddedToText" />
-            <converters:IdentifyMethodToTextConverter x:Key="IdentifyMethodToText" />
 
             <!-- 卡片 -->
             <Style x:Key="Card" TargetType="Border">
@@ -162,7 +162,8 @@
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Padding="16">
-                                <ContentPresenter />
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">

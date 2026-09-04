@@ -1,13 +1,12 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using McModsAdder.Models;
-using McModsAdder.Services;
-using McModsAdder.Views;
+using MCModPlus.Models;
+using MCModPlus.Services;
+using MCModPlus.Views;
 using Microsoft.Win32;
 
-namespace McModsAdder.ViewModels;
+namespace MCModPlus.ViewModels;
 
 public partial class ProfilesViewModel : ObservableObject
 {
@@ -74,14 +73,21 @@ public partial class ProfilesViewModel : ObservableObject
     [RelayCommand]
     private void Delete(ModProfile profile)
     {
-        var result = MessageBox.Show(
-            $"确定删除配置表「{profile.Name}」吗？此操作不可恢复。",
-            "删除确认", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-        if (result == MessageBoxResult.Yes)
+        if (!profile.IsDeletePending)
         {
-            _profileService.Delete(profile);
-            LoadData();
+            foreach (var item in Profiles.Where(item => item != profile && item.IsDeletePending)) item.IsDeletePending = false;
+            profile.IsDeletePending = true;
+            return;
         }
+
+        _profileService.Delete(profile);
+        Profiles.Remove(profile);
+        HasProfiles = Profiles.Count > 0;
+    }
+
+    public void CancelPendingDelete()
+    {
+        foreach (var profile in Profiles.Where(profile => profile.IsDeletePending)) profile.IsDeletePending = false;
     }
 
     [RelayCommand]
