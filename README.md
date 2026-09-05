@@ -51,7 +51,7 @@ MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、�
 
 ## 使用说明
 
-对于 CurseForge 的 API，请访问 [CurseForge for Studio]([CurseForge for Studios](https://console.curseforge.com/)) ，使用 Google 登录，在 API Keys 栏目内生成获取自己的 Key。
+对于 CurseForge 的 API，请访问 [CurseForge for Studio](https://console.curseforge.com/) ，使用 Google 登录，在 API Keys 栏目内生成获取自己的 Key。
 
 ## 获取与运行
 
