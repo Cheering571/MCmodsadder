@@ -32,7 +32,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCurseForgeApiClearPending;
 
-    public string VersionText => "MCMod++ v1.1.0";
+    public string VersionText => "MCMod++ v1.1.1";
 
     public string DataDirText => SettingsService.DataDir;
 
@@ -46,7 +46,7 @@ public partial class SettingsViewModel : ObservableObject
         _curseForgeApiKey = settings.Current.CurseForgeApiKey;
     }
 
-    public string CurseForgeApiPlaceholder => "默认使用内置api，有需求请手动修改";
+    public string CurseForgeApiPlaceholder => "请输入 CurseForge API Key";
 
     partial void OnUseMirrorChanged(bool value)
     {

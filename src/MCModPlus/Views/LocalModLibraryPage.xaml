@@ -21,8 +21,18 @@
                 </ui:Button>
                 <TextBlock Text="{Binding ModCount, StringFormat='共{0}个mod'}" VerticalAlignment="Center"
                            Foreground="{StaticResource TextTertiary}" FontSize="12" Margin="0,0,16,8" />
-                <TextBlock Text="{Binding MessageText}" VerticalAlignment="Center" Margin="6,0,16,8"
-                           Foreground="{StaticResource TextTertiary}" FontSize="12" />
+                <Border Background="#D1D5DB" BorderBrush="#9CA3AF" BorderThickness="1" CornerRadius="6"
+                        Padding="10,5" Margin="6,0,16,8" VerticalAlignment="Center"
+                        Visibility="{Binding IsMessageVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#374151">
+                        <Run Text="{Binding MessageText}" />
+                        <Run Text="：已添加 " />
+                        <Run Text="{Binding AddedCount}" Foreground="#15803D" />
+                        <Run Text=" 个，跳过 " />
+                        <Run Text="{Binding DuplicateCount}" Foreground="#B91C1C" />
+                        <Run Text=" 个重复 Mod。" />
+                    </TextBlock>
+                </Border>
             </StackPanel>
             <Grid x:Name="FilterAndSortBar" Margin="0,0,12,0">
                 <Grid.ColumnDefinitions>
@@ -55,8 +65,6 @@
             <Border HorizontalAlignment="Left" Background="{StaticResource CardBg}" BorderBrush="{StaticResource CardBorder}"
                     BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button Content="批量修改加载器" Command="{Binding BatchSetLoaderCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0" />
-                    <ui:Button Content="批量改 MC 版本" Command="{Binding BatchEditGameVersionCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0" />
                     <ui:Button x:Name="BatchDeleteButton" Tag="BatchDeleteAction" Width="96" Content="批量删除" Command="{Binding BatchDeleteCommand}" IsEnabled="{Binding HasSelection}" Visibility="{Binding IsBatchDeletePending, Converter={StaticResource InverseBoolToVisibility}}" Margin="0,0,12,0" />
                     <ui:Button x:Name="BatchDeleteConfirmButton" Tag="BatchDeleteAction" Width="96" Content="确认" Appearance="Danger" Foreground="White"
                                Command="{Binding BatchDeleteCommand}" Visibility="{Binding IsBatchDeletePending, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,12,0" />
@@ -125,7 +133,7 @@
                                 <Border Grid.Column="1" Width="44" Height="44" CornerRadius="6" Background="{StaticResource BadgeBg}" VerticalAlignment="Center" Margin="0,0,12,0">
                                     <Grid>
                                         <ui:SymbolIcon Symbol="PuzzlePiece24" FontSize="22" Foreground="{StaticResource AccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        <Image Source="{Binding ThumbnailPath}" Width="44" Height="44" Stretch="UniformToFill" />
+                                        <Image Source="{Binding ThumbnailPath, Converter={StaticResource LocalThumbnail}}" Width="44" Height="44" Stretch="UniformToFill" />
                                     </Grid>
                                 </Border>
                                 <StackPanel Grid.Column="2">
@@ -149,15 +157,6 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                     <ui:Button Content="重命名" Command="{Binding DataContext.RenameCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="0,0,8,0" />
-                                    <ComboBox Width="112" Height="32" ItemsSource="{Binding DataContext.LoaderOptions, RelativeSource={RelativeSource AncestorType=Page}}"
-                                              SelectedItem="{Binding Loader}" SelectionChanged="LoaderComboBox_SelectionChanged" Margin="0,0,8,0">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Converter={StaticResource LoaderToText}}" />
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                    <ui:Button Content="改 MC 版本" Command="{Binding DataContext.EditGameVersionCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="0,0,8,0" />
                                     <ui:Button Tag="DeleteAction" Width="72" Height="32" Content="删除" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}"
                                                Visibility="{Binding IsDeletePending, Converter={StaticResource InverseBoolToVisibility}}" />
                                     <ui:Button Tag="DeleteAction" Width="72" Height="32" Content="确认" Appearance="Danger" Foreground="White"

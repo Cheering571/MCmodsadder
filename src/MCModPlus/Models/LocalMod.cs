@@ -10,6 +10,7 @@ public partial class LocalMod : ObservableObject
     public string FileName { get; set; } = string.Empty;
     public string StoredFileName { get; set; } = string.Empty;
     public string ThumbnailPath { get; set; } = string.Empty;
+    public string Sha1 { get; set; } = string.Empty;
     public string Version { get; set; } = "未知";
 
     [ObservableProperty]

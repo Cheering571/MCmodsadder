@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net.Http;
 using MCModPlus.Models;
 
 namespace MCModPlus.Services;
@@ -78,6 +79,7 @@ public class ModInstaller
     private readonly IModProvider _provider;
     private readonly SettingsService _settings;
     private readonly LocalModLibraryService _localLibrary;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ModVersionInfo> _versionCache = new(StringComparer.OrdinalIgnoreCase);
 
     public ModInstaller(IModProvider provider, SettingsService settings, LocalModLibraryService localLibrary)
     {
@@ -91,11 +93,15 @@ public class ModInstaller
     /// 返回 (对比行列表, 待安装清单含依赖, 不可用条目)。
     /// </summary>
     public async Task<(List<ComparisonRow> Rows, List<InstallItem> Plan, List<ProfileEntry> Unavailable)> BuildPlanAsync(
-        GameInstance instance, ModProfile profile, CancellationToken ct = default)
+        GameInstance instance, ModProfile profile, bool forceLocalMods = false, CancellationToken ct = default)
     {
         var installedByProjectId = instance.InstalledMods
             .Where(m => !string.IsNullOrWhiteSpace(m.ProjectId))
             .GroupBy(m => m.ProjectId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        var installedByFileName = instance.InstalledMods
+            .Where(m => !string.IsNullOrWhiteSpace(m.FileName))
+            .GroupBy(m => m.FileName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
         var installedProjectIds = installedByProjectId.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -103,16 +109,26 @@ public class ModInstaller
         var plan = new List<InstallItem>();
         var unavailable = new List<ProfileEntry>();
         var plannedProjectIds = new HashSet<string>();
+        var remoteVersions = (await Task.WhenAll(profile.Entries
+            .Where(entry => string.IsNullOrWhiteSpace(entry.LocalModId) && !string.IsNullOrWhiteSpace(entry.ProjectId))
+            .Select(entry => GetBestVersionCachedAsync(entry.ProjectId, instance.GameVersion, instance.Loader, ct))))
+            .GroupBy(result => result.ProjectId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Version, StringComparer.OrdinalIgnoreCase);
 
         // ---- 第一轮：配置表条目 ----
         foreach (var entry in profile.Entries)
         {
             ct.ThrowIfCancellationRequested();
             var installed = installedByProjectId.GetValueOrDefault(entry.ProjectId);
+            if (installed == null && string.IsNullOrWhiteSpace(entry.LocalModId)
+                && remoteVersions.TryGetValue(entry.ProjectId, out var matchingVersion))
+            {
+                installed = installedByFileName.GetValueOrDefault(matchingVersion?.FileName ?? string.Empty);
+            }
             var libraryMod = string.IsNullOrWhiteSpace(entry.LocalModId) ? null : _localLibrary.GetById(entry.LocalModId);
             if (libraryMod != null)
             {
-                if (!IsCompatible(libraryMod, entry, instance))
+                if (!IsCompatible(libraryMod, entry, instance) && !forceLocalMods)
                 {
                     rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Unavailable });
                     unavailable.Add(entry);
@@ -151,7 +167,7 @@ public class ModInstaller
                 continue;
             }
 
-            var version = await _provider.GetBestVersionAsync(entry.ProjectId, instance.GameVersion, instance.Loader, ct);
+            var version = remoteVersions.GetValueOrDefault(entry.ProjectId);
             if (version == null)
             {
                 rows.Add(new ComparisonRow { Entry = entry, Status = ComparisonStatus.Unavailable });
@@ -218,6 +234,23 @@ public class ModInstaller
         return (rows, plan, unavailable);
     }
 
+    private async Task<(string ProjectId, ModVersionInfo? Version)> GetBestVersionCachedAsync(
+        string projectId, string gameVersion, ModLoader loader, CancellationToken ct)
+    {
+        var cacheKey = $"{projectId}|{gameVersion}|{loader}";
+        if (_versionCache.TryGetValue(cacheKey, out var cached))
+        {
+            return (projectId, cached);
+        }
+
+        var version = await _provider.GetBestVersionAsync(projectId, gameVersion, loader, ct);
+        if (version != null)
+        {
+            _versionCache[cacheKey] = version;
+        }
+        return (projectId, version);
+    }
+
     private static bool IsCompatible(LocalMod libraryMod, ProfileEntry entry, GameInstance instance)
     {
         var loader = libraryMod.Loader;
@@ -252,6 +285,7 @@ public class ModInstaller
         var semaphore = new SemaphoreSlim(maxConcurrency);
         var completed = 0;
         var lockObj = new object();
+        var destinationLocks = new System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
 
         var tasks = plan.Select(async item =>
         {
@@ -272,19 +306,28 @@ public class ModInstaller
 
                 var destPath = Path.Combine(instance.ModsPath, item.Version.FileName);
                 var itemProgress = new Progress<double>(p => item.Progress = p);
-                if (!string.IsNullOrWhiteSpace(item.LocalFilePath))
+                var destinationLock = destinationLocks.GetOrAdd(destPath, _ => new SemaphoreSlim(1, 1));
+                await destinationLock.WaitAsync(ct);
+                try
                 {
-                    if (!File.Exists(item.LocalFilePath))
+                    if (!string.IsNullOrWhiteSpace(item.LocalFilePath))
                     {
-                        throw new FileNotFoundException("本地 Mod 托管文件不存在。", item.LocalFilePath);
-                    }
+                        if (!File.Exists(item.LocalFilePath))
+                        {
+                            throw new FileNotFoundException("本地 Mod 托管文件不存在。", item.LocalFilePath);
+                        }
 
-                    File.Copy(item.LocalFilePath, destPath, overwrite: true);
-                    item.Progress = 1;
+                        File.Copy(item.LocalFilePath, destPath, overwrite: true);
+                        item.Progress = 1;
+                    }
+                    else
+                    {
+                        await _provider.DownloadAsync(item.Version, destPath, itemProgress, ct);
+                    }
                 }
-                else
+                finally
                 {
-                    await _provider.DownloadAsync(item.Version, destPath, itemProgress, ct);
+                    destinationLock.Release();
                 }
 
                 item.Status = InstallItemStatus.Success;
@@ -300,7 +343,19 @@ public class ModInstaller
             catch (Exception ex)
             {
                 item.Status = InstallItemStatus.Failed;
-                item.Error = ex.Message;
+                item.Error = ex is HttpRequestException
+                    ? ex.Message
+                    : $"{ex.GetType().Name}: {ex.Message}";
+                try
+                {
+                    Directory.CreateDirectory(SettingsService.DataDir);
+                    File.AppendAllText(
+                        Path.Combine(SettingsService.DataDir, "download.log"),
+                        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] 项目={item.ProjectName}; 文件={item.Version.FileName}; 项目ID={item.ProjectId}; 地址={item.Version.DownloadUrl}; 错误={ex}\n\n");
+                }
+                catch
+                {
+                }
                 lock (lockObj) { result.Failed.Add(item); }
             }
             finally
@@ -355,8 +410,28 @@ public class ModInstaller
             backupDir ??= Path.Combine(instance.ModsPath,
                 ".MCModPlus-backup", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
             Directory.CreateDirectory(backupDir);
-            File.Move(existing, Path.Combine(backupDir, item.Version.FileName), overwrite: true);
+            await MoveWithRetryAsync(existing, Path.Combine(backupDir, item.Version.FileName), ct);
         }
         return backupDir;
+    }
+
+    private static async Task MoveWithRetryAsync(string sourcePath, string destinationPath, CancellationToken ct)
+    {
+        IOException? lastException = null;
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            try
+            {
+                File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (IOException ex) when (attempt < 7)
+            {
+                lastException = ex;
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * (attempt + 1)), ct);
+            }
+        }
+
+        throw lastException!;
     }
 }

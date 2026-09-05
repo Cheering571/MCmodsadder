@@ -9,6 +9,10 @@
         <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="0,14,0,0" Padding="18,12"
                 Visibility="{Binding HasCompared, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource TextSecondary}">
                         <Run Text="已装 " /><Run Text="{Binding InstalledCount, Mode=OneWay}" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" />
@@ -16,11 +20,17 @@
                         <Run Text=" · 无可用版本 " /><Run Text="{Binding UnavailableCount, Mode=OneWay}" Foreground="{StaticResource DangerBrush}" FontWeight="SemiBold" />
                     </TextBlock>
                 </StackPanel>
-                <ui:Button HorizontalAlignment="Right" Style="{StaticResource GreenButton}"
-                           Content="一键补装缺失 mod" Command="{Binding StartInstallCommand}"
-                           IsEnabled="{Binding CanInstall}" FontSize="14" Padding="18,8">
-                    <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowDownload24" /></ui:Button.Icon>
-                </ui:Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <TextBlock Text="强制加入不匹配的本地 Mod" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{StaticResource TextSecondary}" Margin="0,0,6,0" />
+                    <CheckBox IsChecked="{Binding ForceLocalMods, Mode=TwoWay}" VerticalAlignment="Center"
+                              ToolTip="忽略本地 Mod 的 MC 版本和加载器匹配检查" Margin="0,0,12,0" />
+                    <ui:Button Style="{StaticResource GreenButton}"
+                               Content="一键补装缺失 mod" Command="{Binding StartInstallCommand}"
+                               IsEnabled="{Binding CanInstall}" FontSize="14" Padding="18,8">
+                        <ui:Button.Icon><ui:SymbolIcon Symbol="ArrowDownload24" /></ui:Button.Icon>
+                    </ui:Button>
+                </StackPanel>
             </Grid>
         </Border>
 

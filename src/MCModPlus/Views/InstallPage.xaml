@@ -6,16 +6,11 @@
     <DockPanel Margin="32,24">
 
         <!-- 底部操作（固定不滚动） -->
-        <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="{Binding ResultText}" FontSize="14" FontWeight="SemiBold"
-                           Foreground="{StaticResource AccentGreen}" VerticalAlignment="Center" />
-                <TextBlock Margin="14,0,0,0" FontSize="11" VerticalAlignment="Center"
-                           Foreground="{StaticResource TextTertiary}"
-                           Visibility="{Binding BackupDir, Converter={StaticResource StringToVisibility}}">
-                    <Run Text="旧文件已备份至：" /><Run Text="{Binding BackupDir, Mode=OneWay}" />
-                </TextBlock>
-            </StackPanel>
+            <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="100" HorizontalScrollBarVisibility="Disabled" Margin="0,0,300,0">
+                    <TextBlock Text="{Binding ResultText}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentGreen}" TextWrapping="Wrap" />
+                </ScrollViewer>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ui:Button Content="开始安装" Style="{StaticResource GreenButton}" Padding="18,8"
                            Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}"
@@ -77,6 +72,9 @@
                                                    TextTrimming="CharacterEllipsis">
                                             <Run Text="{Binding VersionText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Item.Version.FileName, Mode=OneWay}" />
                                         </TextBlock>
+                                        <TextBlock Text="{Binding Error}" FontSize="10" Foreground="{StaticResource DangerBrush}"
+                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding Error, Converter={StaticResource StringToVisibility}}" />
                                     </StackPanel>
                                     <Border Grid.Column="1" Style="{StaticResource Badge}" HorizontalAlignment="Left">
                                         <TextBlock Style="{StaticResource BadgeText}" Text="{Binding KindText}"

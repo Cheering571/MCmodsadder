@@ -25,5 +25,5 @@ rebuild-check/
 generated-images/
 
 # Release binaries and IDE agent metadata
-installer/*.exe
+installer/
 .codebuddy/
