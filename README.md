@@ -10,7 +10,7 @@
 
 > **项目状态：开发中**
 >
-> 当前版本为 `v1.1.1`。项目仍在持续开发和完善，可能存在 Bug、兼容性问题或文件操作风险。请在使用前备份 Minecraft 实例和 Mod 文件，并在非生产环境中进行验证。
+> 当前版本为 [`v1.1.1`](https://github.com/Cheering571/MCModPlus/releases/tag/v1.1.1)。项目仍在持续开发和完善，可能存在 Bug、兼容性问题或文件操作风险。请在使用前备份 Minecraft 实例和 Mod 文件，并在非生产环境中进行验证。
 
 ## 项目简介
 
@@ -48,7 +48,14 @@ MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、�
 
 ### 直接运行发布版
 
-在 GitHub Releases 下载带有 `win-x64` 的发布包。若使用自包含发布包，目标电脑无需单独安装 .NET 运行时。
+最新版可从 [GitHub Releases](https://github.com/Cheering571/MCModPlus/releases/latest) 下载。`v1.1.1` Release 提供两种 Windows x64 发布文件：
+
+- `MCModPlus-Setup-1.1.1-win-x64.exe`：安装包，按向导安装后使用。
+- `MCModPlus.exe`：自包含单文件程序，下载后可直接运行，无需安装 .NET 运行时。
+
+如果不想安装软件，直接下载 `MCModPlus.exe` 即可。首次运行前，请确认 Minecraft 和启动器已关闭，并建议先备份实例及 Mod 文件。
+
+默认搜索源为 Modrinth，不需要配置 CurseForge API Key；只有需要使用 CurseForge 搜索时，才需要在设置页面手动填写有效的 API Key。
 
 ### 从源码构建
 
