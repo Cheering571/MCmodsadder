@@ -26,4 +26,5 @@ generated-images/
 
 # Release binaries and IDE agent metadata
 installer/
+docs/screenshots/
 .codebuddy/
