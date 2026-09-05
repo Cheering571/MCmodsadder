@@ -1,11 +1,12 @@
 # MCMod++
 
 <p align="center">
-  <strong>面向 Minecraft 整合包的 Mod 管理与批量补装工具</strong>
+  <strong>面向 Minecraft 整合包的 Mod 批量补装工具</strong>
 </p>
 <p align="center">
-  <em>专注于让整合包换装和 Mod 管理更简单。</em>
+  <em>专注于完善整合包和 Mod 管理。</em>
 </p>
+
 
 
 > **项目状态：开发中**
@@ -16,11 +17,15 @@
 
 MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、维护可复用的 Mod 配置表，并根据实例的 Minecraft 版本和 Mod 加载器批量补装缺失 Mod。
 
-软件名称已由原来的 **旧版项目名称** 正式更名为 **MCModPlus**。本次版本同时加入了 CurseForge 搜索支持和本地 Mod 库，在线 Mod 与本地 Mod 可以在同一套配置表中使用。
+软件名称已正式更名为 **MCMod++**（**MCModPlus**）。本次版本同时加入了 CurseForge 搜索支持和本地 Mod 库，使用时需自行配置CurseForge的api，在线 Mod 与本地 Mod 可以在同一套配置表中使用。
 
 ## 开发说明
 
 本软件的开发工作全程由 **CodeBuddy** 协助完成并实际落地，包括代码编写、功能实现、问题修复、项目构建及相关开发工作。作者主要负责提出项目的初步想法、明确软件需求，并根据实际使用情况对软件后续功能和体验改进提出建议。感谢 CodeBuddy 在本项目开发过程中的协作与支持。
+
+> 作者声明：
+>
+> 想开发这个软件仅仅是为了自己和兄弟玩整合包的时候，能快捷的添加自己想要的mod，每次玩新的整合包都得全部重新添加就很麻烦，鉴于并没有软件开发经验，所以选择用AI，软件完全不知道是怎么开发的，且功能不多、可能有bug、体积还贼大，所以没招了，能用就行。
 
 ## 主要功能
 
@@ -28,7 +33,7 @@ MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、�
 - **加载器识别**：支持 Fabric、Forge、Quilt 和 NeoForge，并可从版本 JSON、HMCL patches、libraries 及目录结构中推断信息。
 - **已安装 Mod 分析**：通过 SHA-1 哈希优先识别 Mod；无法匹配时解析 `fabric.mod.json`、`mods.toml`、`quilt.mod.json` 和 `mcmod.info`。
 - **配置表管理**：创建、编辑、删除、导入和导出可复用的 Mod 配置表；配置表只记录项目，不绑定特定实例版本。
-- **多来源搜索**：支持 Modrinth 与 CurseForge，可按来源搜索并根据项目来源获取版本、依赖和下载文件。
+- **多来源搜索**：支持 Modrinth 与 CurseForge，可按来源搜索并根据项目来源获取版本、依赖和下载文件。（Curseforge需手动配置api）
 - **版本匹配**：根据实例的 Minecraft 版本和加载器筛选可用 Mod 版本，并显示已安装、缺失或无可用版本的状态。
 - **一键补装**：批量下载并安装缺失 Mod，自动处理必需依赖，下载后校验 SHA-1，并可在写入前备份旧文件。
 - **本地 Mod 库**：批量导入 `.jar` 文件，自动解析名称、版本、加载器、Minecraft 版本和图标；支持搜索、筛选、排序、重命名、批量编辑和删除。
@@ -44,9 +49,11 @@ MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、�
 4. 进入实例详情，选择配置表并查看已安装、缺失和不可用项目。
 5. 点击「一键补装缺失 mod」，确认安装清单（包括自动解析出的必需依赖）后开始安装。
 
-## 获取与运行
+## 使用说明
 
-### 直接运行发布版
+对于 CurseForge 的 API，请访问 [CurseForge for Studio]([CurseForge for Studios](https://console.curseforge.com/)) ，使用 Google 登录，在 API Keys 栏目内生成获取自己的 Key。
+
+## 获取与运行
 
 最新版可从 [GitHub Releases](https://github.com/Cheering571/MCModPlus/releases/latest) 下载。`v1.1.1` Release 提供两种 Windows x64 发布文件：
 
@@ -57,39 +64,6 @@ MCMod++ 是一款 Windows 桌面应用，用于识别 Minecraft 游戏实例、�
 
 默认搜索源为 Modrinth，不需要配置 CurseForge API Key；只有需要使用 CurseForge 搜索时，才需要在设置页面手动填写有效的 API Key。
 
-### 从源码构建
-
-环境要求：
-
-- Windows 10/11
-- .NET 8 SDK
-- 可访问 Modrinth 或 CurseForge 服务的网络环境（仅使用本地 Mod 库时不需要在线服务）
-
-在仓库根目录执行：
-
-```powershell
-dotnet restore MCModPlus.sln
-dotnet build MCModPlus.sln -c Release
-```
-
-运行项目：
-
-```powershell
-dotnet run --project src/MCModPlus/MCModPlus.csproj
-```
-
-生成 Windows x64 自包含单文件程序：
-
-```powershell
-dotnet publish src/MCModPlus/MCModPlus.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
-```
-
-发布文件默认位于：
-
-```text
-src/MCModPlus/bin/Release/net8.0-windows/win-x64/publish/
-```
-
 ## 数据与隐私
 
 应用数据默认保存在：
@@ -98,9 +72,7 @@ src/MCModPlus/bin/Release/net8.0-windows/win-x64/publish/
 %APPDATA%/MCModPlus/
 ```
 
-其中包括设置、配置表、本地 Mod 索引以及本地 Mod 文件。CurseForge API Key 不会写入源码仓库；用户配置的 Key 使用 Windows DPAPI 保护后保存，内置默认 Key 也不会以明文形式直接写入代码。
-
-请不要将个人配置目录、日志、API Key、Minecraft 实例文件或本地 Mod 文件提交到 GitHub。提交 Issue 或日志时，请先移除路径、账号信息和其他隐私内容。
+其中包括设置、配置表、本地 Mod 索引以及本地 Mod 文件。CurseForge API Key 不会写入源码仓库；用户配置的 Key 使用 Windows DPAPI 保护后保存。
 
 ## 第三方服务与内容声明
 
@@ -112,7 +84,7 @@ src/MCModPlus/bin/Release/net8.0-windows/win-x64/publish/
 
 ## 许可证与使用限制
 
-本仓库当前未提供独立的 `LICENSE` 文件。除第三方依赖和明确标注的第三方内容外，项目原创代码、界面、文档和资源的使用、再发布、商业使用及二次开发，请先联系维护者 `Cheering571` 并获得明确许可。请勿将本项目冒充为官方软件或官方授权产品，也不要移除项目中的版权和来源声明。
+本项目使用自定义项目许可证，具体授权范围、使用限制和免责声明请参阅 [`LICENSE`](LICENSE) 文件。除第三方依赖和明确标注的第三方内容外，项目原创代码、界面、文档和资源均受该许可证保护。请勿将本项目冒充为官方软件或官方授权产品，也不要移除项目中的版权和来源声明。
 
 ## 更新日志
 
