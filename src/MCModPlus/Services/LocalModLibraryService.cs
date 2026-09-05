@@ -1,9 +1,21 @@
 using System.IO;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using MCModPlus.Models;
 
 namespace MCModPlus.Services;
+
+public sealed class DuplicateLocalModException : InvalidOperationException
+{
+    public LocalMod ExistingMod { get; }
+
+    public DuplicateLocalModException(LocalMod existingMod)
+        : base($"本地库中已存在相同的 Mod：{existingMod.Name}")
+    {
+        ExistingMod = existingMod;
+    }
+}
 
 /// <summary>管理应用数据目录中的本地 Mod 副本与索引。</summary>
 public class LocalModLibraryService
@@ -56,15 +68,39 @@ public class LocalModLibraryService
             throw new InvalidOperationException("请选择有效的 .jar Mod 文件。");
         }
 
+        var sha1 = ComputeSha1(sourcePath);
+        var existing = Mods.FirstOrDefault(mod =>
+            string.Equals(GetOrComputeSha1(mod), sha1, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            throw new DuplicateLocalModException(existing);
+        }
+
         Directory.CreateDirectory(FilesDir);
         var mod = CreateFromFile(sourcePath);
         mod.StoredFileName = $"{mod.Id}{Path.GetExtension(sourcePath)}";
+        mod.Sha1 = sha1;
         File.Copy(sourcePath, GetStoredPath(mod), overwrite: true);
         mod.ThumbnailPath = ExtractThumbnail(mod);
         Mods.Add(mod);
         Mods = Mods.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase).ToList();
         Save();
         return mod;
+    }
+
+    private static string ComputeSha1(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(SHA1.HashData(stream));
+    }
+
+    private string GetOrComputeSha1(LocalMod mod)
+    {
+        if (!string.IsNullOrWhiteSpace(mod.Sha1)) return mod.Sha1;
+        var storedPath = GetStoredPath(mod);
+        if (!File.Exists(storedPath)) return string.Empty;
+        mod.Sha1 = ComputeSha1(storedPath);
+        return mod.Sha1;
     }
 
     public void Save()
@@ -75,17 +111,48 @@ public class LocalModLibraryService
 
     public void Delete(LocalMod mod)
     {
+        DeleteFileWithRetry(GetStoredPath(mod));
+        DeleteFileWithRetry(mod.ThumbnailPath);
         Mods.RemoveAll(item => item.Id == mod.Id);
-        var storedPath = GetStoredPath(mod);
-        if (File.Exists(storedPath))
-        {
-            File.Delete(storedPath);
-        }
-        if (File.Exists(mod.ThumbnailPath))
-        {
-            File.Delete(mod.ThumbnailPath);
-        }
         Save();
+    }
+
+    public IReadOnlyList<LocalMod> DeleteMany(IEnumerable<LocalMod> mods)
+    {
+        var deleted = new List<LocalMod>();
+        foreach (var mod in mods.ToList())
+        {
+            try
+            {
+                DeleteFileWithRetry(GetStoredPath(mod));
+                DeleteFileWithRetry(mod.ThumbnailPath);
+                Mods.RemoveAll(item => item.Id == mod.Id);
+                deleted.Add(mod);
+            }
+            catch
+            {
+            }
+        }
+
+        Save();
+        return deleted;
+    }
+
+    private static void DeleteFileWithRetry(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                File.Delete(path);
+                return;
+            }
+            catch (IOException) when (attempt < 2)
+            {
+                Thread.Sleep(150);
+            }
+        }
     }
 
     public LocalMod? GetById(string id) => Mods.FirstOrDefault(mod => mod.Id == id);

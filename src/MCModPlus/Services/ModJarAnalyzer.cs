@@ -72,7 +72,7 @@ public class ModJarAnalyzer
         });
         await Task.WhenAll(hashTasks);
 
-        progress?.Report(new ModScanProgress("正在匹配 Modrinth 项目", 60));
+        progress?.Report(new ModScanProgress("正在匹配 Modrinth 项目并解析 CurseForge Mod", 60));
 
         // ---- 阶段二：批量哈希匹配 ----
         var hashToMod = mods.Where(m => !string.IsNullOrEmpty(m.Sha1))

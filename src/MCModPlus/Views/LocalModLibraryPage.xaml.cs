@@ -1,8 +1,7 @@
-using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MCModPlus.Models;
 using MCModPlus.Services;
 using MCModPlus.ViewModels;
 
@@ -22,15 +21,6 @@ public partial class LocalModLibraryPage : Page, INavigatedTo, INavigatedFrom
     public void OnNavigatedTo() => _vm.LoadData();
 
     public void OnNavigatedFrom() => _vm.CancelPendingDelete();
-
-    private void LoaderComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox { DataContext: LocalMod mod } comboBox
-            && comboBox.SelectedItem is ModLoader loader)
-        {
-            _vm.SetLoader(mod, loader);
-        }
-    }
 
     private void OnPagePreviewMouseDown(object sender, MouseButtonEventArgs e)
     {

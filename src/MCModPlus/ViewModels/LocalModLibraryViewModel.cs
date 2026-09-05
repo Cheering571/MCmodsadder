@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MCModPlus.Models;
@@ -19,6 +20,20 @@ public partial class LocalModLibraryViewModel : ObservableObject
 
     [ObservableProperty]
     private string _messageText = string.Empty;
+
+    [ObservableProperty]
+    private int _addedCount;
+
+    [ObservableProperty]
+    private int _duplicateCount;
+
+    [ObservableProperty]
+    private int _failedCount;
+
+    [ObservableProperty]
+    private bool _isMessageVisible;
+
+    private DispatcherTimer? _messageTimer;
 
     [ObservableProperty]
     private string _filterText = string.Empty;
@@ -167,6 +182,23 @@ public partial class LocalModLibraryViewModel : ObservableObject
         if (SelectedGameVersion != "全部版本" && !GameVersionOptions.Contains(SelectedGameVersion)) SelectedGameVersion = "全部版本";
     }
 
+    private void ShowMessage(int addedCount, int duplicateCount, int failedCount)
+    {
+        AddedCount = addedCount;
+        DuplicateCount = duplicateCount;
+        FailedCount = failedCount;
+        MessageText = "本地 Mod 添加完成";
+        IsMessageVisible = addedCount > 0 || duplicateCount > 0 || failedCount > 0;
+        _messageTimer?.Stop();
+        if (!IsMessageVisible) return;
+        _messageTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _messageTimer.Tick += (_, _) =>
+        {
+            _messageTimer.Stop();
+            IsMessageVisible = false;
+        };
+        _messageTimer.Start();
+    }
     private static string GameVersionSortKey(string version)
     {
         var parts = version.Split('.', StringSplitOptions.RemoveEmptyEntries);
@@ -199,9 +231,28 @@ public partial class LocalModLibraryViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
         try
         {
-            foreach (var file in dialog.FileNames) _library.Add(file);
+            var addedCount = 0;
+            var duplicateNames = new List<string>();
+            var failedCount = 0;
+            foreach (var file in dialog.FileNames)
+            {
+                try
+                {
+                    _library.Add(file);
+                    addedCount++;
+                }
+                catch (DuplicateLocalModException ex)
+                {
+                    duplicateNames.Add(ex.ExistingMod.Name);
+                }
+                catch
+                {
+                    failedCount++;
+                }
+            }
+
             LoadData();
-            MessageText = $"已添加 {dialog.FileNames.Length} 个 mod，文件已复制到本地库。";
+            ShowMessage(addedCount, duplicateNames.Count, failedCount);
         }
         catch (Exception ex)
         {
@@ -220,55 +271,6 @@ public partial class LocalModLibraryViewModel : ObservableObject
         RefreshFilterOptions();
     }
 
-    public void SetLoader(LocalMod mod, ModLoader loader)
-    {
-        if (mod.Loader == loader) return;
-        mod.Loader = loader;
-        _library.Save();
-        ModsView.Refresh();
-        RefreshFilterOptions();
-    }
-
-    [RelayCommand]
-    private void EditGameVersion(LocalMod mod)
-    {
-        var dialog = new Views.InputDialog("修改 MC 版本", "MC 版本：", mod.GameVersion);
-        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.InputText)) return;
-        mod.GameVersion = dialog.InputText.Trim();
-        _library.Save();
-        ModsView.Refresh();
-        RefreshFilterOptions();
-    }
-
-    [RelayCommand]
-    private void BatchSetLoader()
-    {
-        var selected = SelectedMods;
-        if (selected.Count == 0) return;
-        var dialog = new Views.LoaderSelectionDialog(selected.Count);
-        if (dialog.ShowDialog() != true || dialog.SelectedLoader == ModLoader.Unknown) return;
-        foreach (var mod in selected) mod.Loader = dialog.SelectedLoader;
-        _library.Save();
-        ModsView.Refresh();
-        RefreshFilterOptions();
-        MessageText = $"已将 {selected.Count} 个 Mod 的加载器修改为 {dialog.SelectedLoader.ToDisplay()}。";
-    }
-
-    [RelayCommand]
-    private void BatchEditGameVersion()
-    {
-        var selected = SelectedMods;
-        if (selected.Count == 0) return;
-        var dialog = new Views.InputDialog("批量修改 MC 版本", "MC 版本：", "");
-        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.InputText)) return;
-        var version = dialog.InputText.Trim();
-        foreach (var mod in selected) mod.GameVersion = version;
-        _library.Save();
-        ModsView.Refresh();
-        RefreshFilterOptions();
-        MessageText = $"已将 {selected.Count} 个 Mod 的 MC 版本修改为 {version}。";
-    }
-
     [RelayCommand]
     private void BatchDelete()
     {
@@ -281,10 +283,12 @@ public partial class LocalModLibraryViewModel : ObservableObject
             return;
         }
 
-        foreach (var mod in selected) _library.Delete(mod);
+        var deleted = _library.DeleteMany(selected);
         IsBatchDeletePending = false;
         LoadData();
-        MessageText = $"已删除 {selected.Count} 个 Mod。";
+        MessageText = deleted.Count == selected.Count
+            ? $"已删除 {deleted.Count} 个 Mod。"
+            : $"已删除 {deleted.Count} 个 Mod，{selected.Count - deleted.Count} 个删除失败，请关闭正在使用 Mod 文件的程序后重试。";
     }
 
     public void CancelPendingDelete()

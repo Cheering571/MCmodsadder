@@ -258,7 +258,7 @@ public class ModrinthProvider : IModProvider
             Directory.CreateDirectory(dir);
         }
 
-        var tmpPath = destPath + ".download";
+        var tmpPath = destPath + $".{Guid.NewGuid():N}.download";
         try
         {
             using (var resp = await _http.GetAsync(file.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct))
@@ -292,7 +292,7 @@ public class ModrinthProvider : IModProvider
                 }
             }
 
-            File.Move(tmpPath, destPath, overwrite: true);
+            await MoveWithRetryAsync(tmpPath, destPath, ct);
         }
         finally
         {
@@ -301,6 +301,26 @@ public class ModrinthProvider : IModProvider
                 try { File.Delete(tmpPath); } catch { /* 忽略清理失败 */ }
             }
         }
+    }
+
+    private static async Task MoveWithRetryAsync(string sourcePath, string destinationPath, CancellationToken ct)
+    {
+        IOException? lastException = null;
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            try
+            {
+                File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (IOException ex) when (attempt < 7)
+            {
+                lastException = ex;
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * (attempt + 1)), ct);
+            }
+        }
+
+        throw lastException!;
     }
 
     public static async Task<string> ComputeSha1Async(string path, CancellationToken ct = default)

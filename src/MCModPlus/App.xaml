@@ -117,6 +117,7 @@
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
             <converters:StringToVisibilityConverter x:Key="StringToVisibility" />
             <converters:AddedToTextConverter x:Key="AddedToText" />
+            <converters:LocalThumbnailConverter x:Key="LocalThumbnail" />
 
             <!-- 卡片 -->
             <Style x:Key="Card" TargetType="Border">

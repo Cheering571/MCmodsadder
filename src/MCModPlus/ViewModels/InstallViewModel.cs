@@ -147,11 +147,14 @@ public partial class InstallViewModel : ObservableObject
         {
             var result = await _installer.ExecuteAsync(Instance, plan, progress, _cts.Token);
             BackupDir = result.BackupDir;
+            var failureDetails = result.Failed.Count == 0
+                ? string.Empty
+                : "\n" + string.Join("\n", result.Failed.Select(item => $"{item.Version.FileName}：{item.Error ?? "未知错误"}"));
             ResultText = result.Cancelled
-                ? $"已取消：成功 {result.Succeeded.Count} 个，失败 {result.Failed.Count} 个"
+                ? $"已取消：成功 {result.Succeeded.Count} 个，失败 {result.Failed.Count} 个{failureDetails}"
                 : result.Failed.Count == 0
                     ? $"全部完成！成功安装 {result.Succeeded.Count} 个 mod"
-                    : $"完成：成功 {result.Succeeded.Count} 个，失败 {result.Failed.Count} 个";
+                    : $"完成：成功 {result.Succeeded.Count} 个，失败 {result.Failed.Count} 个{failureDetails}";
         }
         catch (Exception ex)
         {

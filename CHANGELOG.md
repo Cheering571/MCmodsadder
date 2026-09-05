@@ -1,38 +1,33 @@
-# MCMod++ v1.1.0 更新日志
+# MCMod++ v1.1.1 更新日志
 
-发布日期：2026-09-04
+发布日期：2026-09-05
 
 ## 本次更新
 
-### 项目更名
+### 发布形式
 
-- 软件统一更名为 `MCModPlus`，应用程序、项目文件、安装包和文档均已同步更新。
-- 安装包名称为 `MCModPlus-Setup-1.1.0-win-x64.exe`。
+- 新增 Windows x64 自包含单文件程序：`MCModPlus.exe`，无需安装 .NET 运行时，可直接运行。
+- 同时提供安装包：`MCModPlus-Setup-1.1.1-win-x64.exe`。
 
-### CurseForge 支持
+### CurseForge API Key
 
-- 新增 CurseForge Provider 初步支持，可在配置表搜索源下拉选项中选择 CurseForge。
-- 支持合并 Modrinth 与 CurseForge 搜索结果，并根据项目来源路由版本查询、依赖解析和文件下载。
-- 优化 CurseForge 搜索请求，传入用户实际搜索关键词并限制 Minecraft Mod 分类。
-- 支持在设置页面编辑、清除 CurseForge API Key。
+- 默认不配置 CurseForge API Key，软件不会内置或自动使用任何 Key。
+- 如需使用 CurseForge 搜索源，请在设置页面手动配置有效的 CurseForge API Key。
+- 未配置 CurseForge API Key 无需担心：软件默认搜索源为 Modrinth，不会影响 Modrinth 的搜索、版本查询和下载使用。
 
-### 本地 Mod 库
+### 下载与文件处理修复
 
-- 新增本地 Mod 库，可批量导入 `.jar` 文件并集中管理。
-- 导入后自动复制 Mod 文件到应用数据目录的 `local-mods/files`，支持离线使用。
-- 自动解析并展示 Mod 名称、版本、加载器和 Minecraft 版本，并尝试提取 Mod 图标。
-- 支持按名称或文件名搜索，按加载器和 Minecraft 版本筛选，以及按名称、版本或加载器排序。
-- 支持重命名、修改加载器、修改 Minecraft 版本、批量编辑和删除本地 Mod。
-- 配置表支持从本地 Mod 库直接添加 Mod，并与在线 Mod 条目一起保存和管理。
+- 修复多个 Mod 并行下载时临时文件冲突及文件占用问题。
+- 下载完成后释放文件流，再执行校验和文件替换，减少 `IOException` 文件占用错误。
+- 增加文件替换和备份操作的重试机制，提高下载和安装稳定性。
 
-### 搜索与交互修复
+### 配置表与实例管理
 
-- 修正配置表搜索源选择链路，确保选择 CurseForge 后实际请求 CurseForge，而不是继续使用 Modrinth。
-- 保留 Modrinth 官方源与 MCIM 镜像源切换能力。
-- 延续上一版本的页面标题和操作区固定、列表独立滚动及鼠标滚轮重定向改进。
+- 改进实例 Mod 识别、配置表匹配和本地 Mod 库处理逻辑。
+- 优化配置表中 Mod 的版本、加载器和 Minecraft 版本信息展示。
 
 ## 使用说明
 
 - 本版本为 Windows x64 自包含发布包，目标电脑无需单独安装 .NET 运行时。
 - 首次使用前请备份 Minecraft 实例和 Mod 文件。
-- CurseForge 搜索功能需要配置有效的 CurseForge API Key。
+- 默认搜索源为 Modrinth；只有需要使用 CurseForge 搜索时才需要配置 API Key。

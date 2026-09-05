@@ -63,6 +63,9 @@ public partial class InstanceDetailViewModel : ObservableObject
     [ObservableProperty]
     private bool _canInstall;
 
+    [ObservableProperty]
+    private bool _forceLocalMods;
+
     private bool _modsReady;
 
     public InstanceDetailViewModel(
@@ -136,6 +139,14 @@ public partial class InstanceDetailViewModel : ObservableObject
         }
     }
 
+    partial void OnForceLocalModsChanged(bool value)
+    {
+        if (SelectedProfile != null && Instance != null && _modsReady && !IsBusy)
+        {
+            _ = CompareAsync();
+        }
+    }
+
     private async Task CompareAsync()
     {
         if (Instance == null || SelectedProfile == null)
@@ -148,7 +159,7 @@ public partial class InstanceDetailViewModel : ObservableObject
         BusyText = "正在与配置表对比…";
         try
         {
-            var (rows, plan, unavailable) = await _installer.BuildPlanAsync(Instance, SelectedProfile);
+            var (rows, plan, unavailable) = await _installer.BuildPlanAsync(Instance, SelectedProfile, ForceLocalMods);
             Rows = new ObservableCollection<ComparisonRow>(rows);
             BusyText = "正在加载 Mod 缩略图…";
             _appState.LastComparison = rows;
@@ -182,6 +193,7 @@ public partial class InstanceDetailViewModel : ObservableObject
         {
             return;
         }
+
         _nav.Navigate<InstallPage>();
     }
 

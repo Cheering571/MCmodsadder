@@ -17,6 +17,7 @@ public sealed class CurseForgeProvider : IModProvider
     private const int ModClassId = 6;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
     private readonly HttpClient _http;
+    private readonly HttpClient _downloadHttp;
     private string _apiKey = string.Empty;
 
     public CurseForgeProvider(HttpClient http, SettingsService settings)
@@ -24,6 +25,15 @@ public sealed class CurseForgeProvider : IModProvider
         _http = http;
         _http.BaseAddress = new Uri(BaseUrl);
         _http.Timeout = TimeSpan.FromSeconds(60);
+        _downloadHttp = new HttpClient(new HttpClientHandler
+        {
+            AllowAutoRedirect = true,
+            AutomaticDecompression = System.Net.DecompressionMethods.All,
+            MaxConnectionsPerServer = 8
+        })
+        {
+            Timeout = TimeSpan.FromMinutes(5)
+        };
         if (!_http.DefaultRequestHeaders.UserAgent.Any())
         {
             _http.DefaultRequestHeaders.UserAgent.ParseAdd("MCModPlus/1.0");
@@ -130,28 +140,57 @@ public sealed class CurseForgeProvider : IModProvider
     {
         EnsureConfigured();
         Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-        var tmpPath = destPath + ".download";
+        var tmpPath = destPath + $".{Guid.NewGuid():N}.download";
         try
         {
-            using var response = await _http.GetAsync(file.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
-            response.EnsureSuccessStatusCode();
-            await using var input = await response.Content.ReadAsStreamAsync(ct);
-            await using var output = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            var total = response.Content.Headers.ContentLength ?? file.Size;
-            var received = 0L;
-            var buffer = new byte[81920];
-            int read;
-            while ((read = await input.ReadAsync(buffer, ct)) > 0)
+            using var request = new HttpRequestMessage(HttpMethod.Get, file.DownloadUrl);
+            request.Headers.UserAgent.ParseAdd("MCModPlus/1.0");
+            request.Headers.Referrer = new Uri("https://www.curseforge.com/");
+            using var response = await _downloadHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!response.IsSuccessStatusCode)
             {
-                await output.WriteAsync(buffer.AsMemory(0, read), ct);
-                received += read;
-                if (total > 0) progress?.Report((double)received / total);
+                var detail = await response.Content.ReadAsStringAsync(ct);
+                throw new HttpRequestException($"CurseForge 下载失败（HTTP {(int)response.StatusCode} {response.ReasonPhrase}）：{detail[..Math.Min(detail.Length, 200)]}");
+            }
+            {
+                await using var input = await response.Content.ReadAsStreamAsync(ct);
+                await using var output = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                var total = response.Content.Headers.ContentLength ?? file.Size;
+                var received = 0L;
+                var buffer = new byte[81920];
+                int read;
+                while ((read = await input.ReadAsync(buffer, ct)) > 0)
+                {
+                    await output.WriteAsync(buffer.AsMemory(0, read), ct);
+                    received += read;
+                    if (total > 0) progress?.Report((double)received / total);
+                }
             }
             if (!string.IsNullOrWhiteSpace(file.Sha1) && !string.Equals(await ComputeSha1Async(tmpPath, ct), file.Sha1, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException($"SHA1 校验失败: {file.FileName}");
-            File.Move(tmpPath, destPath, true);
+            await MoveWithRetryAsync(tmpPath, destPath, ct);
         }
         finally { if (File.Exists(tmpPath)) try { File.Delete(tmpPath); } catch { } }
+    }
+
+    private static async Task MoveWithRetryAsync(string sourcePath, string destinationPath, CancellationToken ct)
+    {
+        IOException? lastException = null;
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            try
+            {
+                File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (IOException ex) when (attempt < 7)
+            {
+                lastException = ex;
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * (attempt + 1)), ct);
+            }
+        }
+
+        throw lastException!;
     }
 
     private void EnsureConfigured()
@@ -162,7 +201,12 @@ public sealed class CurseForgeProvider : IModProvider
     private async Task<T?> GetAsync<T>(string url, CancellationToken ct)
     {
         using var response = await _http.GetAsync(url, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException($"CurseForge API 请求失败（HTTP {(int)response.StatusCode} {response.ReasonPhrase}）：{detail[..Math.Min(detail.Length, 300)]}");
+        }
+
         return await response.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
     }
 
@@ -220,7 +264,7 @@ public sealed class CurseForgeProvider : IModProvider
     private static ModVersionInfo ToVersionInfo(CurseFile file, string downloadUrl) => new()
     {
         VersionId = Prefix(file.Id.ToString()), ProjectId = Prefix(file.ModId.ToString()), VersionNumber = file.DisplayName,
-        Name = file.DisplayName, DownloadUrl = downloadUrl, FileName = file.FileName, Sha1 = file.Hashes?.FirstOrDefault()?.Value ?? string.Empty,
+        Name = file.DisplayName, DownloadUrl = downloadUrl, FileName = file.FileName, Sha1 = file.Hashes?.FirstOrDefault(h => string.Equals(h.Algorithm, "sha1", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty,
         Size = file.FileLength, Dependencies = file.Dependencies?.Where(d => d.RelationType == 3).Select(d => new ModDependencyInfo { ProjectId = Prefix(d.ModId.ToString()), Required = true }).ToList() ?? new()
     };
 
@@ -240,7 +284,7 @@ public sealed class CurseForgeProvider : IModProvider
     private sealed class CurseMod { public int Id { get; set; } public string Name { get; set; } = ""; public string Slug { get; set; } = ""; public string? Summary { get; set; } public long DownloadCount { get; set; } public CurseLinks? Links { get; set; } public CurseLogo? Logo { get; set; } public List<CurseAuthor>? Authors { get; set; } }
     private sealed class CurseFile { public int Id { get; set; } public int ModId { get; set; } public bool IsAvailable { get; set; } = true; public string FileName { get; set; } = ""; public string DisplayName { get; set; } = ""; public int ReleaseType { get; set; } public DateTime FileDate { get; set; } public long FileLength { get; set; } public string? DownloadUrl { get; set; } public bool IsServerPack { get; set; } public List<CurseHash>? Hashes { get; set; } public List<CurseDependency>? Dependencies { get; set; } }
     private sealed class CurseDependency { public int ModId { get; set; } public int RelationType { get; set; } }
-    private sealed class CurseHash { public string Value { get; set; } = ""; }
+    private sealed class CurseHash { public string Algorithm { get; set; } = ""; public string Value { get; set; } = ""; }
     private sealed class CurseLinks { public string? WebsiteUrl { get; set; } }
     private sealed class CurseLogo { public string? Url { get; set; } }
     private sealed class CurseAuthor { public string Name { get; set; } = ""; }
